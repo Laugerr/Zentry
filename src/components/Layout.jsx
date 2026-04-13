@@ -1,9 +1,15 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, LayoutDashboard } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, LayoutDashboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 // Navigation items — add new tools here and create matching routes in App.jsx
 const NAV_ITEMS = [
+  {
+    path: '/news',
+    icon: Newspaper,
+    label: 'News Tracker',
+    description: 'Live global & local RSS feeds',
+  },
   {
     path: '/jobs',
     icon: Briefcase,
