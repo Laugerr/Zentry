@@ -27,9 +27,23 @@ function formatDate(date) {
   })
 }
 
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+}
+
 export default function Layout() {
   const location = useLocation()
-  const [today] = useState(new Date())
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   // Find active nav label for the header
   const activeNav = NAV_ITEMS.find((item) =>
@@ -178,7 +192,8 @@ export default function Layout() {
               letterSpacing: '0.04em',
             }}
           >
-            {formatDate(today)}
+            {formatDate(now)}
+            <span style={{ opacity: 0.55, marginLeft: '0.5rem' }}>{formatTime(now)}</span>
           </div>
         </header>
 
