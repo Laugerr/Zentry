@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, LayoutDashboard } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 // Navigation items — add new tools here and create matching routes in App.jsx
@@ -21,6 +21,12 @@ const NAV_ITEMS = [
     icon: BookOpen,
     label: 'Language Planner',
     description: 'Weekly language learning tracker',
+  },
+  {
+    path: '/cv',
+    icon: FileText,
+    label: 'CV Builder',
+    description: 'Build and export your Lebenslauf',
   },
 ]
 
@@ -207,12 +213,15 @@ export default function Layout() {
         <main
           style={{
             flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
             overflowY: 'auto',
             padding: '1.75rem',
           }}
         >
           {/* Page transition key forces re-mount animation on route change */}
-          <div key={location.pathname} className="page-enter">
+          <div key={location.pathname} className="page-enter" style={{ flex: 1, minHeight: 0 }}>
             <Outlet />
           </div>
         </main>
