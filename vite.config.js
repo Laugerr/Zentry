@@ -8,4 +8,18 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/',
+  server: {
+    proxy: {
+      '/api/jobs': {
+        target: 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs',
+        changeOrigin: true,
+        rewrite: () => '',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('X-API-Key', 'jobboerse-jobsuche')
+          })
+        },
+      },
+    },
+  },
 })

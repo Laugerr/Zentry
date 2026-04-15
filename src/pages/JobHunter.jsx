@@ -3,9 +3,9 @@ import { Search, ExternalLink, AlertCircle, MapPin, Building2, Calendar, Briefca
 
 // ─── Arbeitsagentur API ───────────────────────────────────────────────────────
 
-const proxy = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
-const BA_BASE = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4'
-const BA_HEADERS = { 'X-API-Key': 'jobboerse-jobsuche' }
+// Requests go through our own Vercel serverless function (/api/jobs)
+// so there are no CORS issues and no third-party proxy dependency.
+const BA_BASE = '/api/jobs'
 
 const WORK_TYPE_LABEL = {
   VOLLZEIT:    'Full-time',
@@ -45,7 +45,7 @@ function mapJob(job) {
 async function searchArbeitsagentur({ keywords, city, radiusKm }) {
   const fetchPage = async (page) => {
     const params = new URLSearchParams({ was: keywords, wo: city, umkreis: String(radiusKm), size: 25, page })
-    const res = await fetch(proxy(`${BA_BASE}/jobs?${params}`), { headers: BA_HEADERS })
+    const res = await fetch(`${BA_BASE}?${params}`)
     if (!res.ok) throw new Error(`Arbeitsagentur returned ${res.status}`)
     const data = await res.json()
     return (data.stellenangebote ?? []).map(mapJob)
