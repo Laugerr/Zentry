@@ -61,10 +61,12 @@ export default function Layout() {
   useEffect(() => {
     async function fetchWeather() {
       try {
-        // Get coordinates from IP
-        const geo = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
+        // Get coordinates from IP (ipinfo returns "lat,lon" in loc field)
+        const geo = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) })
         if (!geo.ok) return
-        const { latitude, longitude, city } = await geo.json()
+        const { loc, city } = await geo.json()
+        if (!loc) return
+        const [latitude, longitude] = loc.split(',').map(Number)
         if (!latitude || !longitude) return
 
         // Get current weather from Open-Meteo (no API key needed)

@@ -633,10 +633,6 @@ export default function NewsTracker() {
     async function detect() {
       const services = [
         async () => {
-          const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
-          if (r.ok) { const d = await r.json(); return d.country_code?.toUpperCase() }
-        },
-        async () => {
           const r = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) })
           if (r.ok) { const d = await r.json(); return d.country?.toUpperCase() }
         },
