@@ -748,7 +748,7 @@ export default function NewsTracker() {
       {view === 'country' && <CountryStats key={country} countryCode={country} />}
 
       {/* Feed columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleFeeds.length}, 1fr)`, gap: '1.25rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
         {visibleFeeds.map((feed) => (
           <FeedColumn key={`${view}-${country}-${feed.id}`} feed={feed} category={category} />
         ))}

@@ -349,11 +349,21 @@ function AddBtn({ onClick, label }) {
 
 export default function CVBuilder() {
   const [cv, setCV]         = useState(loadCV)
-  const [mode, setMode]     = useState('split')       // 'split' | 'preview'
+  const [mode, setMode]     = useState('split')       // 'split' | 'edit' | 'preview'
   const [template, setTpl]  = useState('modern')      // 'modern' | 'minimal'
   const [zoom, setZoom]     = useState(0.7)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const photoRef = useRef()
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // On mobile, 'split' collapses to 'edit'
+  const effectiveMode = isMobile && mode === 'split' ? 'edit' : mode
 
   useEffect(() => {
     try { localStorage.setItem('zentry-cv', JSON.stringify(cv)) } catch {}
@@ -454,8 +464,11 @@ body { background:white; }
 
           {/* Mode */}
           <div className="segmented">
-            <button className={`segmented-option ${mode === 'split' ? 'active' : ''}`} onClick={() => setMode('split')}>Edit + Preview</button>
-            <button className={`segmented-option ${mode === 'preview' ? 'active' : ''}`} onClick={() => setMode('preview')}>Preview</button>
+            {!isMobile && (
+              <button className={`segmented-option ${mode === 'split' ? 'active' : ''}`} onClick={() => setMode('split')}>Edit + Preview</button>
+            )}
+            <button className={`segmented-option ${effectiveMode === 'edit' ? 'active' : ''}`} onClick={() => setMode(isMobile ? 'edit' : 'split')}>Edit</button>
+            <button className={`segmented-option ${effectiveMode === 'preview' ? 'active' : ''}`} onClick={() => setMode('preview')}>Preview</button>
           </div>
 
           {/* Template */}
@@ -464,12 +477,14 @@ body { background:white; }
             <button className={`segmented-option ${template === 'minimal' ? 'active' : ''}`} onClick={() => setTpl('minimal')}>Minimal</button>
           </div>
 
-          {/* Zoom */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <button className="btn-ghost" onClick={() => setZoom(z => Math.max(ZOOM_STEPS[0], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) - 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomOut size={13} /></button>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", minWidth: 32, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-            <button className="btn-ghost" onClick={() => setZoom(z => Math.min(ZOOM_STEPS[ZOOM_STEPS.length - 1], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) + 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomIn size={13} /></button>
-          </div>
+          {/* Zoom — desktop only */}
+          {!isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <button className="btn-ghost" onClick={() => setZoom(z => Math.max(ZOOM_STEPS[0], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) - 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomOut size={13} /></button>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", minWidth: 32, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+              <button className="btn-ghost" onClick={() => setZoom(z => Math.min(ZOOM_STEPS[ZOOM_STEPS.length - 1], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) + 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomIn size={13} /></button>
+            </div>
+          )}
 
           {/* Reset */}
           <button onClick={handleReset} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: confirmReset ? '#f87171' : 'var(--text-muted)' }}>
@@ -486,7 +501,7 @@ body { background:white; }
       {/* ── Body grid ── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: mode === 'split' ? '400px 1fr' : '1fr',
+        gridTemplateColumns: effectiveMode === 'split' ? '400px 1fr' : '1fr',
         gap: '1.25rem',
         flex: 1,
         minHeight: 0,
@@ -494,7 +509,7 @@ body { background:white; }
       }}>
 
         {/* ── Form panel ── */}
-        {mode === 'split' && (
+        {(effectiveMode === 'split' || effectiveMode === 'edit') && (
           <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.45rem', paddingRight: '0.3rem' }}>
 
             <FormSection title="Personal Info" icon={User} color="#a78bfa" defaultOpen>
@@ -658,11 +673,13 @@ body { background:white; }
         )}
 
         {/* ── Preview panel ── */}
-        <div style={{ overflowY: 'auto', overflowX: 'auto', background: 'rgba(0,0,0,0.18)', borderRadius: '12px', padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-          <div style={{ zoom: zoom, flexShrink: 0 }}>
-            <CVPreview cv={cv} template={template} />
+        {(effectiveMode === 'split' || effectiveMode === 'preview') && (
+          <div style={{ overflowY: 'auto', overflowX: 'auto', background: 'rgba(0,0,0,0.18)', borderRadius: '12px', padding: isMobile ? '1rem' : '2rem', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+            <div style={{ zoom: isMobile ? 0.5 : zoom, flexShrink: 0 }}>
+              <CVPreview cv={cv} template={template} />
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>
