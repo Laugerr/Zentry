@@ -157,6 +157,96 @@ const COUNTRY_FEEDS = {
       { id: 'channels-ng', name: 'Channels TV',    url: 'https://www.channelstv.com/feed/' },
     ],
   },
+  ZA: {
+    label: 'South Africa', flag: '🇿🇦',
+    feeds: [
+      { id: 'iol-za',  name: 'IOL News',      url: 'https://www.iol.co.za/rss' },
+      { id: 'mg-za',   name: 'Mail Guardian', url: 'https://mg.co.za/feed/' },
+    ],
+  },
+  EG: {
+    label: 'Egypt', flag: '🇪🇬',
+    feeds: [
+      { id: 'eg-ind',  name: 'Egypt Independent',  url: 'https://egyptindependent.com/feed/' },
+      { id: 'eg-str',  name: 'Egyptian Streets',   url: 'https://egyptianstreets.com/feed/' },
+      { id: 'eg-dne',  name: 'Daily News Egypt',   url: 'https://www.dailynewsegypt.com/feed/' },
+    ],
+  },
+  GH: {
+    label: 'Ghana', flag: '🇬🇭',
+    feeds: [
+      { id: 'gh-joy',  name: 'Joy Online',    url: 'https://www.myjoyonline.com/feed/' },
+    ],
+  },
+  ET: {
+    label: 'Ethiopia', flag: '🇪🇹',
+    feeds: [
+      { id: 'et-rep',  name: 'The Reporter',  url: 'https://www.thereporterethiopia.com/feed/' },
+      { id: 'et-af',   name: 'Addis Fortune', url: 'https://addisfortune.news/feed/' },
+    ],
+  },
+  TZ: {
+    label: 'Tanzania', flag: '🇹🇿',
+    feeds: [
+      { id: 'tz-dn',   name: 'Daily News',    url: 'https://www.dailynews.co.tz/feed/' },
+    ],
+  },
+  UG: {
+    label: 'Uganda', flag: '🇺🇬',
+    feeds: [
+      { id: 'ug-obs',  name: 'The Observer',  url: 'https://observer.ug/feed/' },
+    ],
+  },
+  ZW: {
+    label: 'Zimbabwe', flag: '🇿🇼',
+    feeds: [
+      { id: 'zw-her',  name: 'The Herald',    url: 'https://www.herald.co.zw/feed/' },
+      { id: 'zw-zl',   name: 'Zim Live',      url: 'https://www.zimlive.com/feed/' },
+      { id: 'zw-nzw',  name: 'New Zimbabwe',  url: 'https://www.newzimbabwe.com/feed/' },
+    ],
+  },
+  ZM: {
+    label: 'Zambia', flag: '🇿🇲',
+    feeds: [
+      { id: 'zm-lt',   name: 'Lusaka Times',  url: 'https://www.lusakatimes.com/feed/' },
+      { id: 'zm-dm',   name: 'Daily Mail',    url: 'https://www.daily-mail.co.zm/feed/' },
+    ],
+  },
+  RW: {
+    label: 'Rwanda', flag: '🇷🇼',
+    feeds: [
+      { id: 'rw-kt',   name: 'KT Press',      url: 'https://www.ktpress.rw/feed/' },
+      { id: 'rw-rna',  name: 'RNA News',      url: 'https://www.rnanews.com/feed/' },
+    ],
+  },
+  TN: {
+    label: 'Tunisia', flag: '🇹🇳',
+    feeds: [
+      { id: 'tn-tl',   name: 'Tunisia Live',  url: 'https://www.tunisia-live.net/feed/' },
+      { id: 'tn-bn',   name: 'Business News', url: 'https://www.businessnews.com.tn/rss' },
+    ],
+  },
+  SN: {
+    label: 'Senegal', flag: '🇸🇳',
+    feeds: [
+      { id: 'sn-sng',  name: 'Senego',        url: 'https://senego.com/feed' },
+      { id: 'sn-an',   name: 'Africa News',   url: 'https://www.africanews.com/feed/' },
+    ],
+  },
+  CI: {
+    label: "Côte d'Ivoire", flag: '🇨🇮',
+    feeds: [
+      { id: 'ci-cn',   name: 'Connectionivoirienne', url: 'https://www.connectionivoirienne.net/feed' },
+      { id: 'ci-atv',  name: 'AbidjanTV',            url: 'https://www.abidjantv.net/feed/' },
+    ],
+  },
+  CM: {
+    label: 'Cameroon', flag: '🇨🇲',
+    feeds: [
+      { id: 'cm-jdc',  name: 'Journal du Cameroun', url: 'https://www.journalducameroun.com/feed/' },
+      { id: 'cm-ac',   name: 'Actu Cameroun',       url: 'https://actucameroun.com/feed/' },
+    ],
+  },
 }
 
 // ─── Categories ──────────────────────────────────────────────────────────────
@@ -196,6 +286,11 @@ const COUNTRY_TIMEZONES = {
   MA: 'Africa/Casablanca', AE: 'Asia/Dubai',       CN: 'Asia/Shanghai',
   PH: 'Asia/Manila',      LT: 'Europe/Vilnius',
   KE: 'Africa/Nairobi',   NG: 'Africa/Lagos',
+  ZA: 'Africa/Johannesburg', EG: 'Africa/Cairo',   GH: 'Africa/Accra',
+  ET: 'Africa/Addis_Ababa',  TZ: 'Africa/Dar_es_Salaam', UG: 'Africa/Kampala',
+  ZW: 'Africa/Harare',    ZM: 'Africa/Lusaka',    RW: 'Africa/Kigali',
+  TN: 'Africa/Tunis',     SN: 'Africa/Dakar',     CI: 'Africa/Abidjan',
+  CM: 'Africa/Douala',
 }
 
 const WMO = {
@@ -467,7 +562,11 @@ function timeAgo(dateStr) {
 }
 
 // Countries ordered by geopolitical/economic weight
-const COUNTRY_ORDER = ['US', 'CN', 'DE', 'GB', 'JP', 'FR', 'AU', 'BR', 'IT', 'ES', 'NL', 'SE', 'PL', 'AE', 'MA', 'PH', 'LT', 'KE', 'NG']
+const COUNTRY_ORDER = [
+  'US', 'CN', 'DE', 'GB', 'JP', 'FR', 'AU', 'BR', 'IT', 'ES', 'NL', 'SE', 'PL', 'AE', 'PH', 'LT',
+  // Africa
+  'NG', 'ZA', 'EG', 'KE', 'GH', 'ET', 'TZ', 'UG', 'ZW', 'ZM', 'RW', 'MA', 'TN', 'SN', 'CI', 'CM',
+]
 
 // ─── NewsCard ─────────────────────────────────────────────────────────────────
 
@@ -619,6 +718,7 @@ export default function NewsTracker() {
   const [view, setView]           = useState('global')    // 'global' | 'country'
   const [country, setCountry]     = useState('DE')
   const [showCountryDrop, setShowCountryDrop] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
   const [category, setCategory]   = useState('all')
   const [isMobile, setIsMobile]   = useState(window.innerWidth < 768)
 
@@ -627,6 +727,13 @@ export default function NewsTracker() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    if (!showCountryDrop) return
+    const close = (e) => { if (!e.target.closest('[data-country-picker]')) { setShowCountryDrop(false); setCountrySearch('') } }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showCountryDrop])
 
   // Detect actual location via IP on mount — tries multiple services
   useEffect(() => {
@@ -696,26 +803,56 @@ export default function NewsTracker() {
 
         {/* Country picker — only visible in country mode */}
         {view === 'country' && (
-          <div style={{ position: 'relative' }}>
-            <button className="btn-ghost" onClick={() => setShowCountryDrop((v) => !v)}
+          <div style={{ position: 'relative' }} data-country-picker>
+            <button className="btn-ghost" onClick={() => { setShowCountryDrop((v) => !v); setCountrySearch('') }}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.9rem' }}>
               {countryMeta?.flag} {countryMeta?.label}
               <ChevronDown size={13} style={{ transform: showCountryDrop ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
 
             {showCountryDrop && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', minWidth: 200, maxHeight: 320, overflowY: 'auto' }}>
-                {COUNTRY_ORDER.map((code) => {
-                  const meta = COUNTRY_FEEDS[code]
-                  return (
-                    <button key={code}
-                      onClick={() => { setCountry(code); setShowCountryDrop(false) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', padding: '0.55rem 1rem', background: country === code ? 'rgba(139,92,246,0.1)' : 'transparent', color: country === code ? '#a78bfa' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>
-                      <span>{meta.flag}</span>
-                      <span>{meta.label}</span>
-                    </button>
-                  )
-                })}
+              <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', minWidth: 220 }}>
+                {/* Search input */}
+                <div style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid var(--border)' }}>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Search country…"
+                    value={countrySearch}
+                    onChange={(e) => setCountrySearch(e.target.value)}
+                    style={{
+                      width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--border)',
+                      borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.82rem',
+                      color: 'var(--text-primary)', outline: 'none', fontFamily: "'Inter', sans-serif",
+                    }}
+                  />
+                </div>
+
+                {/* Filtered list */}
+                <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                  {COUNTRY_ORDER
+                    .filter((code) => {
+                      const q = countrySearch.toLowerCase()
+                      return !q || COUNTRY_FEEDS[code].label.toLowerCase().includes(q) || code.toLowerCase().includes(q)
+                    })
+                    .map((code) => {
+                      const meta = COUNTRY_FEEDS[code]
+                      return (
+                        <button key={code}
+                          onClick={() => { setCountry(code); setShowCountryDrop(false); setCountrySearch('') }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', padding: '0.55rem 1rem', background: country === code ? 'rgba(139,92,246,0.1)' : 'transparent', color: country === code ? '#a78bfa' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>
+                          <span>{meta.flag}</span>
+                          <span>{meta.label}</span>
+                        </button>
+                      )
+                    })}
+                  {COUNTRY_ORDER.filter((code) => {
+                    const q = countrySearch.toLowerCase()
+                    return !q || COUNTRY_FEEDS[code].label.toLowerCase().includes(q) || code.toLowerCase().includes(q)
+                  }).length === 0 && (
+                    <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>No countries found</div>
+                  )}
+                </div>
               </div>
             )}
           </div>
