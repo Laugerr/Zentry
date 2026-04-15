@@ -141,6 +141,22 @@ const COUNTRY_FEEDS = {
       { id: 'guardian-eu', name: 'Guardian Europe', url: 'https://www.theguardian.com/world/europe-news/rss' },
     ],
   },
+  KE: {
+    label: 'Kenya', flag: '🇰🇪',
+    feeds: [
+      { id: 'nation-ke',   name: 'Nation Africa',  url: 'https://nation.africa/kenya/rss.xml' },
+      { id: 'standard-ke', name: 'The Standard',   url: 'https://www.standardmedia.co.ke/rss/headlines.php' },
+      { id: 'kbc-ke',      name: 'KBC',            url: 'https://www.kbc.co.ke/feed/' },
+    ],
+  },
+  NG: {
+    label: 'Nigeria', flag: '🇳🇬',
+    feeds: [
+      { id: 'punch-ng',    name: 'Punch',          url: 'https://punchng.com/feed/' },
+      { id: 'vanguard-ng', name: 'Vanguard',       url: 'https://www.vanguardngr.com/feed/' },
+      { id: 'channels-ng', name: 'Channels TV',    url: 'https://www.channelstv.com/feed/' },
+    ],
+  },
 }
 
 // ─── Categories ──────────────────────────────────────────────────────────────
@@ -179,6 +195,7 @@ const COUNTRY_TIMEZONES = {
   BR: 'America/Sao_Paulo', JP: 'Asia/Tokyo',       AU: 'Australia/Sydney',
   MA: 'Africa/Casablanca', AE: 'Asia/Dubai',       CN: 'Asia/Shanghai',
   PH: 'Asia/Manila',      LT: 'Europe/Vilnius',
+  KE: 'Africa/Nairobi',   NG: 'Africa/Lagos',
 }
 
 const WMO = {
@@ -360,7 +377,7 @@ function CountryStats({ countryCode }) {
 // ─── RSS fetcher / parser ─────────────────────────────────────────────────────
 
 async function fetchRSS(url) {
-  // Try corsproxy.io first — same proxy used elsewhere in the app
+  // Try corsproxy.io first
   try {
     const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
       signal: AbortSignal.timeout(15000),
@@ -369,9 +386,28 @@ async function fetchRSS(url) {
       const text = await res.text()
       if (text.includes('<item>') || text.includes('<entry>')) return parseRSS(text)
     }
-  } catch { /* fall through to next proxy */ }
+  } catch { /* fall through */ }
 
-  // Fallback: allorigins (wraps response in JSON)
+  // Fallback: rss2json (returns JSON, works when XML proxies are blocked)
+  try {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`, {
+      signal: AbortSignal.timeout(15000),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.status === 'ok' && json.items?.length) {
+        return json.items.slice(0, 12).map((item) => ({
+          title:       item.title ?? '',
+          description: (item.description ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220),
+          link:        item.link ?? '',
+          image:       item.thumbnail || item.enclosure?.link || null,
+          pubDate:     item.pubDate ?? null,
+        })).filter((a) => a.title && a.link)
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Last resort: allorigins
   const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {
     signal: AbortSignal.timeout(15000),
   })
@@ -431,7 +467,7 @@ function timeAgo(dateStr) {
 }
 
 // Countries ordered by geopolitical/economic weight
-const COUNTRY_ORDER = ['US', 'CN', 'DE', 'GB', 'JP', 'FR', 'AU', 'BR', 'IT', 'ES', 'NL', 'SE', 'PL', 'AE', 'MA', 'PH', 'LT']
+const COUNTRY_ORDER = ['US', 'CN', 'DE', 'GB', 'JP', 'FR', 'AU', 'BR', 'IT', 'ES', 'NL', 'SE', 'PL', 'AE', 'MA', 'PH', 'LT', 'KE', 'NG']
 
 // ─── NewsCard ─────────────────────────────────────────────────────────────────
 
@@ -585,16 +621,29 @@ export default function NewsTracker() {
   const [showCountryDrop, setShowCountryDrop] = useState(false)
   const [category, setCategory]   = useState('all')
 
-  // Detect actual location via IP on mount
+  // Detect actual location via IP on mount — tries multiple services
   useEffect(() => {
     async function detect() {
-      try {
-        const res = await fetch('https://ipapi.co/country/', { signal: AbortSignal.timeout(5000) })
-        if (res.ok) {
-          const code = (await res.text()).trim().toUpperCase()
-          if (COUNTRY_FEEDS[code]) { setCountry(code); return }
-        }
-      } catch { /* fall through */ }
+      const services = [
+        async () => {
+          const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
+          if (r.ok) { const d = await r.json(); return d.country_code?.toUpperCase() }
+        },
+        async () => {
+          const r = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) })
+          if (r.ok) { const d = await r.json(); return d.country?.toUpperCase() }
+        },
+        async () => {
+          const r = await fetch('https://ip-api.com/json?fields=countryCode', { signal: AbortSignal.timeout(5000) })
+          if (r.ok) { const d = await r.json(); return d.countryCode?.toUpperCase() }
+        },
+      ]
+      for (const svc of services) {
+        try {
+          const code = await svc()
+          if (code && COUNTRY_FEEDS[code]) { setCountry(code); return }
+        } catch { /* try next */ }
+      }
       // Fallback: browser locale
       const lang = navigator.language || ''
       const code = lang.split('-')[1]?.toUpperCase()
