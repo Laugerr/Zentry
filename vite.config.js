@@ -7,5 +7,5 @@ import tailwindcss from '@tailwindcss/vite'
 // e.g. if your repo is github.com/username/life-dashboard, set base: '/life-dashboard/'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/Zentry/',
+  base: '/',
 })
