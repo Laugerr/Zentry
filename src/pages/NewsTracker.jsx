@@ -620,6 +620,13 @@ export default function NewsTracker() {
   const [country, setCountry]     = useState('DE')
   const [showCountryDrop, setShowCountryDrop] = useState(false)
   const [category, setCategory]   = useState('all')
+  const [isMobile, setIsMobile]   = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // Detect actual location via IP on mount — tries multiple services
   useEffect(() => {
@@ -748,7 +755,7 @@ export default function NewsTracker() {
       {view === 'country' && <CountryStats key={country} countryCode={country} />}
 
       {/* Feed columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${visibleFeeds.length}, 1fr)`, gap: '1.25rem', alignItems: 'start' }}>
         {visibleFeeds.map((feed) => (
           <FeedColumn key={`${view}-${country}-${feed.id}`} feed={feed} category={category} />
         ))}

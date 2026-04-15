@@ -1,6 +1,6 @@
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 
 const NAV_ITEMS = [
   { path: '/news',     icon: Newspaper,  label: 'News Tracker',     description: 'Live global & local RSS feeds' },
@@ -17,11 +17,19 @@ function formatTime(date) {
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
+const WMO_ICON = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '🌨️', 73: '❄️', 75: '❄️', 80: '🌦️', 81: '🌧️', 82: '🌧️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️',
+}
+
 export default function Layout() {
   const location  = useLocation()
   const [now, setNow]               = useState(new Date())
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 768)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [weather, setWeather]       = useState(null)   // { temp, icon, city }
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -48,6 +56,30 @@ export default function Layout() {
     document.body.style.overflow = (isMobile && sidebarOpen) ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [isMobile, sidebarOpen])
+
+  // Fetch weather for current location on mount
+  useEffect(() => {
+    async function fetchWeather() {
+      try {
+        // Get coordinates from IP
+        const geo = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
+        if (!geo.ok) return
+        const { latitude, longitude, city } = await geo.json()
+        if (!latitude || !longitude) return
+
+        // Get current weather from Open-Meteo (no API key needed)
+        const wx = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`,
+          { signal: AbortSignal.timeout(5000) }
+        )
+        if (!wx.ok) return
+        const { current_weather } = await wx.json()
+        const icon = WMO_ICON[current_weather.weathercode] ?? '🌡️'
+        setWeather({ temp: Math.round(current_weather.temperature), icon, city: city ?? '' })
+      } catch { /* silently ignore */ }
+    }
+    fetchWeather()
+  }, [])
 
   const activeNav = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))
 
@@ -179,8 +211,21 @@ export default function Layout() {
             </div>
           </div>
 
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {isMobile ? formatTime(now) : <>{formatDate(now)}<span style={{ opacity: 0.55, marginLeft: '0.5rem' }}>{formatTime(now)}</span></>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            {/* Weather pill */}
+            {weather && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.2rem 0.55rem', whiteSpace: 'nowrap' }}>
+                <span>{weather.icon}</span>
+                <span style={{ color: '#7dd3fc', fontWeight: 600 }}>{weather.temp}°C</span>
+                {!isMobile && weather.city && <span style={{ opacity: 0.6 }}>{weather.city}</span>}
+              </div>
+            )}
+
+            {/* Clock */}
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+              {!isMobile && <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>{formatDate(now)}</span>}
+              <span style={{ color: '#a78bfa', fontWeight: 600 }}>{formatTime(now)}</span>
+            </div>
           </div>
         </header>
 
