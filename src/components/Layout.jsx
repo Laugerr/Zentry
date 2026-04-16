@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X, Radio, Trophy } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const NAV_ITEMS = [
@@ -131,13 +131,7 @@ export default function Layout() {
         <div style={{ marginBottom: '1.75rem', paddingLeft: '0.25rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '8px',
-                background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <LayoutDashboard size={15} color="white" />
-              </div>
+              <img src="/favicon.svg" alt="Zentry" style={{ width: 28, height: 28, flexShrink: 0 }} />
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 zentry
               </span>

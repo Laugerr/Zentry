@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zentry-ecru.vercel.app/sitemap.xml
