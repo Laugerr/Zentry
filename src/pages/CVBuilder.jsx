@@ -276,10 +276,13 @@ function CVPreview({ cv, template }) {
 function FormSection({ title, icon: Icon, color = '#a78bfa', defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={{ borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', borderLeft: `3px solid ${color}` }}>
+    // flex-shrink:0 prevents the section from being squished by the scroll container.
+    // overflow must NOT be hidden — it was clipping expanded content and causing visual overlap.
+    <div style={{ borderRadius: '10px', border: '1px solid var(--border)', borderLeft: `3px solid ${color}`, flexShrink: 0 }}>
       <button onClick={() => setOpen(v => !v)} style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
         padding: '0.65rem 1rem', background: 'var(--bg-card)', border: 'none',
+        borderRadius: open ? '10px 10px 0 0' : '10px',
         cursor: 'pointer', color: 'var(--text-primary)',
         fontFamily: "'Inter', sans-serif", fontSize: '0.83rem', fontWeight: 600,
       }}>
@@ -288,7 +291,7 @@ function FormSection({ title, icon: Icon, color = '#a78bfa', defaultOpen = false
         <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
       {open && (
-        <div style={{ padding: '0.85rem 1rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.65rem', background: 'rgba(255,255,255,0.01)' }}>
+        <div style={{ padding: '0.85rem 1rem', borderTop: '1px solid var(--border)', borderRadius: '0 0 10px 10px', display: 'flex', flexDirection: 'column', gap: '0.65rem', background: 'rgba(255,255,255,0.01)' }}>
           {children}
         </div>
       )}
@@ -322,8 +325,8 @@ function Tarea({ value, onChange, placeholder, rows = 3 }) {
   return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{ ...iStyle, resize: 'vertical', lineHeight: 1.5 }} />
 }
 
-function Grid2({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>{children}</div> }
-function Grid3({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.55rem' }}>{children}</div> }
+function Grid2({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.55rem' }}>{children}</div> }
+function Grid3({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.55rem' }}>{children}</div> }
 
 function EntryCard({ label, onRemove, children }) {
   return (
@@ -442,34 +445,45 @@ body { background:white; }
   const p = cv.personal
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem', minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : '100%', gap: '1rem', minHeight: isMobile ? 'auto' : 0 }}>
 
       {/* ── Top bar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.15rem' }}>
-            <span className="gradient-text">CV Builder</span>
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Auto-saved locally · Export to PDF</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', flexShrink: 0 }}>
+
+        {/* Row 1: title + score + export */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.15rem' }}>
+              <span className="gradient-text">CV Builder</span>
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Auto-saved locally · Export to PDF</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Completeness */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <div style={{ width: 70, height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${score}%`, background: scoreColor, borderRadius: 3, transition: 'width 0.4s' }} />
+              </div>
+              <span style={{ fontSize: '0.72rem', color: scoreColor, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{score}%</span>
+            </div>
+            <button className="btn-primary" onClick={handleExportPDF} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}>
+              <Download size={13} /> Export PDF
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {/* Completeness */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <div style={{ width: 70, height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${score}%`, background: scoreColor, borderRadius: 3, transition: 'width 0.4s' }} />
-            </div>
-            <span style={{ fontSize: '0.72rem', color: scoreColor, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{score}%</span>
-          </div>
-
+        {/* Row 2: mode + template + zoom + reset */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {/* Mode */}
           <div className="segmented">
             {!isMobile && (
-              <button className={`segmented-option ${mode === 'split' ? 'active' : ''}`} onClick={() => setMode('split')}>Edit + Preview</button>
+              <button className={`segmented-option ${mode === 'split' ? 'active' : ''}`} onClick={() => setMode('split')}>Split</button>
             )}
             <button className={`segmented-option ${effectiveMode === 'edit' ? 'active' : ''}`} onClick={() => setMode(isMobile ? 'edit' : 'split')}>Edit</button>
             <button className={`segmented-option ${effectiveMode === 'preview' ? 'active' : ''}`} onClick={() => setMode('preview')}>Preview</button>
           </div>
+
+          <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
 
           {/* Template */}
           <div className="segmented">
@@ -479,38 +493,37 @@ body { background:white; }
 
           {/* Zoom — desktop only */}
           {!isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <button className="btn-ghost" onClick={() => setZoom(z => Math.max(ZOOM_STEPS[0], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) - 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomOut size={13} /></button>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", minWidth: 32, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-              <button className="btn-ghost" onClick={() => setZoom(z => Math.min(ZOOM_STEPS[ZOOM_STEPS.length - 1], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) + 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomIn size={13} /></button>
-            </div>
+            <>
+              <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <button className="btn-ghost" onClick={() => setZoom(z => Math.max(ZOOM_STEPS[0], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) - 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomOut size={13} /></button>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", minWidth: 32, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+                <button className="btn-ghost" onClick={() => setZoom(z => Math.min(ZOOM_STEPS[ZOOM_STEPS.length - 1], ZOOM_STEPS[ZOOM_STEPS.indexOf(z) + 1] ?? z))} style={{ padding: '0.3rem' }}><ZoomIn size={13} /></button>
+              </div>
+            </>
           )}
 
-          {/* Reset */}
-          <button onClick={handleReset} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: confirmReset ? '#f87171' : 'var(--text-muted)' }}>
-            <RotateCcw size={12} /> {confirmReset ? 'Click again to confirm' : 'Reset'}
-          </button>
-
-          {/* Export */}
-          <button className="btn-primary" onClick={handleExportPDF} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}>
-            <Download size={13} /> Export PDF
-          </button>
+          <div style={{ marginLeft: 'auto' }}>
+            <button onClick={handleReset} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: confirmReset ? '#f87171' : 'var(--text-muted)' }}>
+              <RotateCcw size={12} /> {confirmReset ? 'Confirm reset' : 'Reset'}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── Body grid ── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: effectiveMode === 'split' ? '400px 1fr' : '1fr',
+        gridTemplateColumns: effectiveMode === 'split' ? 'minmax(0, 400px) minmax(0, 1fr)' : '1fr',
         gap: '1.25rem',
         flex: 1,
         minHeight: 0,
-        overflow: 'hidden',
+        // Each grid child gets height = this container's height, enabling independent scroll
       }}>
 
         {/* ── Form panel ── */}
         {(effectiveMode === 'split' || effectiveMode === 'edit') && (
-          <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.45rem', paddingRight: '0.3rem' }}>
+          <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.45rem', paddingRight: '0.25rem', minWidth: 0, alignContent: 'flex-start' }}>
 
             <FormSection title="Personal Info" icon={User} color="#a78bfa" defaultOpen>
               {/* Photo row */}
@@ -674,8 +687,8 @@ body { background:white; }
 
         {/* ── Preview panel ── */}
         {(effectiveMode === 'split' || effectiveMode === 'preview') && (
-          <div style={{ overflowY: 'auto', overflowX: 'auto', background: 'rgba(0,0,0,0.18)', borderRadius: '12px', padding: isMobile ? '1rem' : '2rem', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-            <div style={{ zoom: isMobile ? 0.5 : zoom, flexShrink: 0 }}>
+          <div style={{ overflowX: 'auto', overflowY: isMobile ? 'visible' : 'auto', background: 'rgba(0,0,0,0.18)', borderRadius: '12px', padding: isMobile ? '0.75rem' : '2rem', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0 }}>
+            <div style={{ zoom: isMobile ? 0.45 : zoom, flexShrink: 0, transformOrigin: 'top center' }}>
               <CVPreview cv={cv} template={template} />
             </div>
           </div>

@@ -472,10 +472,14 @@ function CountryStats({ countryCode }) {
 // ─── RSS fetcher / parser ─────────────────────────────────────────────────────
 
 async function fetchRSS(url) {
+  // Cache-bust token — forces proxies to skip their cached response on each call
+  const bust = `&_t=${Math.floor(Date.now() / 60000)}` // changes every minute
+
   // Try corsproxy.io first
   try {
     const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
       signal: AbortSignal.timeout(15000),
+      cache: 'no-store',
     })
     if (res.ok) {
       const text = await res.text()
@@ -483,9 +487,9 @@ async function fetchRSS(url) {
     }
   } catch { /* fall through */ }
 
-  // Fallback: rss2json (returns JSON, works when XML proxies are blocked)
+  // Fallback: rss2json — append bust param so it doesn't serve stale cache
   try {
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`, {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}${bust}`, {
       signal: AbortSignal.timeout(15000),
     })
     if (res.ok) {
@@ -644,6 +648,12 @@ function FeedColumn({ feed, category }) {
   }, [feed.url])
 
   useEffect(() => { load() }, [load])
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    const id = setInterval(load, 10 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [load])
 
   const filtered = category === 'all'
     ? articles
