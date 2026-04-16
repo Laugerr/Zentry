@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X, Radio } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X, Radio, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const NAV_ITEMS = [
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { path: '/language', icon: BookOpen,   label: 'Language Planner', description: 'Weekly language learning tracker' },
   { path: '/cv',       icon: FileText,   label: 'CV Builder',       description: 'Build and export your Lebenslauf' },
   { path: '/radio',    icon: Radio,      label: 'Live Radio',       description: 'World map of live radio stations' },
+  { path: '/football', icon: Trophy,     label: 'Football Today',   description: "Today's scores & fixtures" },
 ]
 
 function formatDate(date) {
@@ -238,6 +239,22 @@ export default function Layout() {
             <Outlet />
           </div>
         </main>
+
+        {/* Footer — outside scroll area, always pinned at bottom */}
+        <footer style={{
+          flexShrink: 0,
+          padding: '0.5rem 1.25rem',
+          borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
+          background: 'rgba(10,10,15,0.8)',
+        }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            © {new Date().getFullYear()} Lauger · Zentry
+          </span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.5 }}>
+            All rights reserved
+          </span>
+        </footer>
       </div>
     </div>
   )

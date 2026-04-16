@@ -1,149 +1,145 @@
-# ⚡ Zentry — Personal Life Dashboard
+<div align="center">
 
-> A dark, modern personal dashboard built with **React + Vite + Tailwind CSS**, inspired by [codedex.io](https://www.codedex.io). Persistent sidebar, smooth page transitions, and tools to manage your career and learning — all in one place.
+# ⚡ Zentry
+
+### Personal Life Dashboard
+
+<p>
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-a78bfa?style=for-the-badge" />
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/No%20API%20Keys%20Required-34d399?style=flat-square" />
+  <img src="https://img.shields.io/badge/Zero%20Paywalls-34d399?style=flat-square" />
+  <img src="https://img.shields.io/badge/Dark%20Theme-0a0a0f?style=flat-square&logoColor=white" />
+</p>
+
+**A dark, minimal dashboard with six tools — all free, all in one place.**
+
+🌐 **[zentry-ecru.vercel.app](https://zentry-ecru.vercel.app)**
+
+</div>
 
 ---
 
 ## 🧰 Tools
 
-| Tool | Description |
-|---|---|
-| 💼 **Job Hunter** | Search German job listings via Arbeitsagentur (free, no key) or Adzuna (free key required) |
-| 📚 **Language Planner** | Weekly learning tracker with per-language localStorage persistence |
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/YOUR_USERNAME/Zentry.git
-cd Zentry
-npm install
-```
-
-### 2. Configure environment variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in your Adzuna API keys (see section below). The Arbeitsagentur source works without any keys.
-
-### 3. Run locally
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
----
-
-## 🔑 Getting Adzuna API Keys (Free)
-
-Adzuna provides free API access for personal/non-commercial projects.
-
-1. Go to [https://developer.adzuna.com/](https://developer.adzuna.com/)
-2. Click **Sign Up** and create an account
-3. Once logged in, go to **My Apps** → **Create new application**
-4. Fill in your app details (name, description, URL)
-5. Copy your **app_id** and **app_key**
-6. Add them to your `.env` file:
-
-```env
-VITE_ADZUNA_APP_ID=your_app_id_here
-VITE_ADZUNA_APP_KEY=your_app_key_here
-```
-
-> 🔒 The `.env` file is listed in `.gitignore` — your keys will never be committed to git.
-
----
-
-## 🌐 Deploying to GitHub Pages
-
-### 1. Update `vite.config.js`
-
-Set the `base` to match your GitHub repository name:
-
-```js
-// vite.config.js
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  base: '/YOUR-REPO-NAME/',  // ← change this
-})
-```
-
-### 2. Deploy
-
-```bash
-npm run deploy
-```
-
-This runs `npm run build` then pushes the `dist/` folder to the `gh-pages` branch. Your app will be live at `https://YOUR_USERNAME.github.io/YOUR-REPO-NAME/`.
-
-> **⚙️ First-time setup:** In your GitHub repo, go to **Settings → Pages** and set the source branch to `gh-pages`.
-
----
-
-## 🗂 Project Structure
-
-```
-src/
-├── App.jsx                   # Router setup — add new routes here
-├── main.jsx                  # React entry point
-├── index.css                 # Global styles + Tailwind + design tokens
-├── components/
-│   └── Layout.jsx            # Persistent sidebar + header + page wrapper
-└── pages/
-    ├── JobHunter.jsx         # 💼 Tool 1 — job search
-    └── LanguagePlanner.jsx   # 📚 Tool 2 — weekly language tracker
-```
-
-### ➕ Adding a New Tool
-
-1. Create `src/pages/YourTool.jsx`
-2. Add a route in `src/App.jsx`:
-   ```jsx
-   <Route path="your-tool" element={<YourTool />} />
-   ```
-3. Add a nav entry in `src/components/Layout.jsx` inside the `NAV_ITEMS` array:
-   ```js
-   { path: '/your-tool', icon: YourIcon, label: 'Your Tool', description: 'Short description' }
-   ```
+<table>
+  <tr>
+    <td>📰</td>
+    <td><strong>News Tracker</strong></td>
+    <td>Live RSS feeds from 32 countries across Africa, Europe, Asia & the Americas. Category filters, country stats, auto-refresh every 5 min.</td>
+  </tr>
+  <tr>
+    <td>💼</td>
+    <td><strong>Job Hunter</strong></td>
+    <td>Search German job listings via the Bundesagentur für Arbeit. No API key needed, proxied through Vercel.</td>
+  </tr>
+  <tr>
+    <td>📚</td>
+    <td><strong>Language Planner</strong></td>
+    <td>Weekly language learning tracker. Multiple languages, progress stored locally per language.</td>
+  </tr>
+  <tr>
+    <td>📄</td>
+    <td><strong>CV Builder</strong></td>
+    <td>Build a German-format Lebenslauf with live preview, PDF export, and two templates.</td>
+  </tr>
+  <tr>
+    <td>📻</td>
+    <td><strong>Live Radio</strong></td>
+    <td>Interactive world map of 600+ live radio stations color-coded by genre. Click any dot to tune in.</td>
+  </tr>
+  <tr>
+    <td>⚽</td>
+    <td><strong>Football Today</strong></td>
+    <td>Live fixtures and scores across 14 competitions with league-specific news feeds. Auto-refreshes every 60 seconds.</td>
+  </tr>
+</table>
 
 ---
 
 ## 🛠 Tech Stack
 
-| | |
+<p>
+  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/React_Router-CA4245?style=flat-square&logo=react-router&logoColor=white" />
+  <img src="https://img.shields.io/badge/Lucide-f472b6?style=flat-square" />
+  <img src="https://img.shields.io/badge/react--simple--maps-60a5fa?style=flat-square" />
+  <img src="https://img.shields.io/badge/JetBrains_Mono-000000?style=flat-square&logo=jetbrains&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white" />
+</p>
+
+---
+
+## 🌐 APIs Used
+
+> All free — no keys required.
+
+| API | Purpose |
 |---|---|
-| ⚛️ Framework | React 19 + Vite 8 |
-| 🎨 Styling | Tailwind CSS v4 (via `@tailwindcss/vite` plugin) |
-| 🔀 Routing | React Router v7 (HashRouter for GitHub Pages compatibility) |
-| 🖼 Icons | Lucide React |
-| 🔤 Fonts | JetBrains Mono (headings) + Inter (body) |
-| 🚀 Deployment | GitHub Pages via `gh-pages` |
+| codetabs · rss2json · allorigins | RSS proxy chain for News Tracker |
+| Bundesagentur für Arbeit | Job listings (via Vercel serverless proxy) |
+| Radio Browser API | Live radio stations & stream URLs |
+| ESPN public scoreboard | Football fixtures & live scores |
+| BBC Sport RSS + The Guardian RSS | Football news feeds |
+| Open-Meteo | Weather — sidebar & country stats |
+| ipinfo.io | Location detection for local weather |
+| restcountries.com | Country info & flags in News Tracker |
 
 ---
 
-## 💼 Job Hunter — API Details
+## 🚀 Local Setup
 
-### 🇩🇪 Arbeitsagentur (German Federal Employment Agency)
-- **Endpoint:** `https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs`
-- **Auth:** Uses a public API key (`jobboerse-jobsuche`) documented in their official developer portal
-- **Docs:** [https://jobsuche.api.bund.dev/](https://jobsuche.api.bund.dev/)
-- **Cost:** Free, no registration required
+```bash
+git clone https://github.com/Laugerr/Zentry.git
+cd Zentry
+npm install
+npm run dev
+```
 
-### 🌍 Adzuna
-- **Endpoint:** `https://api.adzuna.com/v1/api/jobs/de/search/1`
-- **Auth:** `app_id` + `app_key` query params (set in `.env`)
-- **Docs:** [https://api.adzuna.com/](https://api.adzuna.com/)
-- **Cost:** Free tier — 250 requests/hour
+Open [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 📚 Language Planner — Storage
+## 📁 Project Structure
 
-Plans are saved to `localStorage` using the key pattern `zentry:lang:<language>`. Each language has its own independent plan so you can track multiple languages simultaneously. Data persists across page reloads and browser sessions.
+```
+Zentry/
+├── api/
+│   └── jobs.js                  # Vercel serverless proxy → Bundesagentur API
+├── src/
+│   ├── App.jsx                  # Routes
+│   ├── components/
+│   │   └── Layout.jsx           # Sidebar · header · weather · clock
+│   └── pages/
+│       ├── NewsTracker.jsx      # 📰 32-country news feeds
+│       ├── JobHunter.jsx        # 💼 German job search
+│       ├── LanguagePlanner.jsx  # 📚 Weekly learning tracker
+│       ├── CVBuilder.jsx        # 📄 Lebenslauf builder
+│       ├── LiveRadio.jsx        # 📻 World radio map
+│       └── FootballToday.jsx    # ⚽ Live scores & feeds
+└── vercel.json
+```
+
+---
+
+## ➕ Adding a New Tool
+
+1. Create `src/pages/YourTool.jsx`
+2. Add a route in `src/App.jsx`
+3. Add a nav entry in `Layout.jsx` inside `NAV_ITEMS`
+
+```js
+{ path: '/your-tool', icon: YourIcon, label: 'Your Tool', description: 'Short description' }
+```
+
+---
+
+<div align="center">
+  <sub>Built by <a href="https://github.com/Laugerr">Lauger</a></sub>
+</div>
