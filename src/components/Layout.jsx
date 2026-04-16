@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, LayoutDashboard, FileText, Menu, X, Radio } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const NAV_ITEMS = [
@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { path: '/jobs',     icon: Briefcase,  label: 'Job Hunter',       description: 'Search German job listings' },
   { path: '/language', icon: BookOpen,   label: 'Language Planner', description: 'Weekly language learning tracker' },
   { path: '/cv',       icon: FileText,   label: 'CV Builder',       description: 'Build and export your Lebenslauf' },
+  { path: '/radio',    icon: Radio,      label: 'Live Radio',       description: 'World map of live radio stations' },
 ]
 
 function formatDate(date) {
