@@ -32,9 +32,9 @@ const COUNTRY_FEEDS = {
   US: {
     label: 'United States', flag: '🇺🇸',
     feeds: [
-      { id: 'npr-us',    name: 'NPR',              url: 'https://feeds.npr.org/1001/rss.xml' },
-      { id: 'cnn',       name: 'CNN',              url: 'http://rss.cnn.com/rss/edition.rss' },
-      { id: 'bbc-us',    name: 'BBC Americas',     url: 'https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml' },
+      { id: 'npr-us',  name: 'NPR',      url: 'https://feeds.npr.org/1001/rss.xml' },
+      { id: 'abc-us',  name: 'ABC News', url: 'https://abcnews.go.com/abcnews/topstories' },
+      { id: 'cbs-us',  name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main' },
     ],
   },
   FR: {
@@ -104,17 +104,17 @@ const COUNTRY_FEEDS = {
   MA: {
     label: 'Morocco', flag: '🇲🇦',
     feeds: [
-      { id: 'hespress',  name: 'Hespress',   url: 'https://www.hespress.com/feed' },
-      { id: 'medias24',  name: 'Médias24',   url: 'https://medias24.com/feed/' },
-      { id: 'yabiladi',  name: 'Yabiladi',   url: 'https://www.yabiladi.com/articles/rss.xml' },
+      { id: 'medias24',  name: 'Médias24',          url: 'https://medias24.com/feed/' },
+      { id: 'mwn',       name: 'Morocco World News', url: 'https://www.moroccoworldnews.com/feed/' },
+      { id: 'nap',       name: 'North Africa Post',  url: 'https://northafricapost.com/feed/' },
     ],
   },
   AE: {
     label: 'UAE', flag: '🇦🇪',
     feeds: [
-      { id: 'arab-news',   name: 'Arab News',       url: 'https://www.arabnews.com/rss.xml' },
-      { id: 'mee',         name: 'Middle East Eye', url: 'https://www.middleeasteye.net/rss' },
-      { id: 'arab-weekly', name: 'Arab Weekly',     url: 'https://thearabweekly.com/feed' },
+      { id: 'mee',        name: 'Middle East Eye', url: 'https://www.middleeasteye.net/rss' },
+      { id: 'aljazeera',  name: 'Al Jazeera',      url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+      { id: 'al-monitor', name: 'Al Monitor',      url: 'https://www.al-monitor.com/rss' },
     ],
   },
   CN: {
@@ -144,7 +144,7 @@ const COUNTRY_FEEDS = {
   KE: {
     label: 'Kenya', flag: '🇰🇪',
     feeds: [
-      { id: 'nation-ke',   name: 'Nation Africa',  url: 'https://nation.africa/kenya/rss.xml' },
+      { id: 'nation-ke',   name: 'Nation Africa',  url: 'https://nation.africa/africa/rss.xml' },
       { id: 'standard-ke', name: 'The Standard',   url: 'https://www.standardmedia.co.ke/rss/headlines.php' },
       { id: 'kbc-ke',      name: 'KBC',            url: 'https://www.kbc.co.ke/feed/' },
     ],
@@ -181,8 +181,8 @@ const COUNTRY_FEEDS = {
   ET: {
     label: 'Ethiopia', flag: '🇪🇹',
     feeds: [
-      { id: 'et-rep',  name: 'The Reporter',  url: 'https://www.thereporterethiopia.com/feed/' },
-      { id: 'et-af',   name: 'Addis Fortune', url: 'https://addisfortune.news/feed/' },
+      { id: 'et-mon',  name: 'Ethiopian Monitor', url: 'https://ethiopianmonitor.com/feed/' },
+      { id: 'et-af',   name: 'Addis Fortune',     url: 'https://addisfortune.news/feed/' },
     ],
   },
   TZ: {
@@ -200,9 +200,8 @@ const COUNTRY_FEEDS = {
   ZW: {
     label: 'Zimbabwe', flag: '🇿🇼',
     feeds: [
-      { id: 'zw-her',  name: 'The Herald',    url: 'https://www.herald.co.zw/feed/' },
-      { id: 'zw-zl',   name: 'Zim Live',      url: 'https://www.zimlive.com/feed/' },
       { id: 'zw-nzw',  name: 'New Zimbabwe',  url: 'https://www.newzimbabwe.com/feed/' },
+      { id: 'zw-eye',  name: 'ZimEye',        url: 'https://www.zimeye.net/feed/' },
     ],
   },
   ZM: {
@@ -475,9 +474,9 @@ async function fetchRSS(url) {
   // Cache-bust token — forces proxies to skip their cached response on each call
   const bust = `&_t=${Math.floor(Date.now() / 60000)}` // changes every minute
 
-  // Try corsproxy.io first
+  // Primary: codetabs — no cache, returns raw XML
   try {
-    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
+    const res = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {
       signal: AbortSignal.timeout(15000),
       cache: 'no-store',
     })
@@ -487,7 +486,7 @@ async function fetchRSS(url) {
     }
   } catch { /* fall through */ }
 
-  // Fallback: rss2json — append bust param so it doesn't serve stale cache
+  // Fallback: rss2json — has ~1h cache but works for feeds codetabs can't reach
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}${bust}`, {
       signal: AbortSignal.timeout(15000),
@@ -495,13 +494,22 @@ async function fetchRSS(url) {
     if (res.ok) {
       const json = await res.json()
       if (json.status === 'ok' && json.items?.length) {
-        return json.items.slice(0, 12).map((item) => ({
-          title:       item.title ?? '',
-          description: (item.description ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220),
-          link:        item.link ?? '',
-          image:       item.thumbnail || item.enclosure?.link || null,
-          pubDate:     item.pubDate ?? null,
-        })).filter((a) => a.title && a.link)
+        return sortByDate(json.items.slice(0, 12).map((item) => {
+          const extractImg = (str) => { const m = (str || '').match(/<img[^>]+src=["']([^"']+)["']/i); return m ? m[1] : null }
+          const rawImg =
+            (item.thumbnail && item.thumbnail.startsWith('http') ? item.thumbnail : null) ||
+            (item.enclosure?.link && item.enclosure.link.startsWith('http') ? item.enclosure.link : null) ||
+            extractImg(item.content) ||
+            extractImg(item.description) ||
+            null
+          return {
+            title:       item.title ?? '',
+            description: (item.description ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220),
+            link:        item.link ?? '',
+            image:       rawImg,
+            pubDate:     item.pubDate ?? null,
+          }
+        }).filter((a) => a.title && a.link))
       }
     }
   } catch { /* fall through */ }
@@ -516,6 +524,14 @@ async function fetchRSS(url) {
   return parseRSS(json.contents)
 }
 
+function sortByDate(articles) {
+  return articles.sort((a, b) => {
+    const da = a.pubDate ? new Date(a.pubDate) : new Date(0)
+    const db = b.pubDate ? new Date(b.pubDate) : new Date(0)
+    return db - da
+  })
+}
+
 function parseRSS(xml) {
   const doc = new DOMParser().parseFromString(xml, 'text/xml')
 
@@ -523,7 +539,7 @@ function parseRSS(xml) {
   const isAtom = !!doc.querySelector('feed')
   const items  = Array.from(doc.querySelectorAll(isAtom ? 'entry' : 'item'))
 
-  return items.slice(0, 12).map((item) => {
+  return sortByDate(items.slice(0, 12).map((item) => {
     const get  = (sel) => item.querySelector(sel)?.textContent?.trim() ?? ''
     const attr = (sel, a) => item.querySelector(sel)?.getAttribute(a) ?? ''
 
@@ -536,20 +552,29 @@ function parseRSS(xml) {
     const link   = linkEl?.getAttribute('href') || linkEl?.textContent?.trim() || attr('guid', 'href') || get('guid')
 
     // Image — try multiple RSS image conventions
-    const image =
+    const rawXml = item.outerHTML || ''
+    const extractImg = (str) => {
+      const m = str.match(/<img[^>]+src=["']([^"']+)["']/i)
+      return m ? m[1] : null
+    }
+    const rawImage =
       attr('enclosure[type^="image"]', 'url') ||
       attr('media\\:content[medium="image"], media\\:content[type^="image"]', 'url') ||
+      attr('media\\:content[url]', 'url') ||
       attr('media\\:thumbnail', 'url') ||
       attr('media\\:content', 'url') ||
-      (() => {
-        const m = rawDesc.match(/<img[^>]+src="([^"]+)"/)
-        return m ? m[1] : null
-      })() || null
+      get('media\\:thumbnail') ||
+      (() => { const m = rawXml.match(/url="(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i); return m ? m[1] : null })() ||
+      extractImg(rawDesc) ||
+      extractImg(get('content\\:encoded') || get('content')) ||
+      (() => { const m = rawXml.match(/<itunes:image[^>]+href="([^"]+)"/i); return m ? m[1] : null })() ||
+      null
+    const image = rawImage && rawImage.startsWith('http') ? rawImage : null
 
     const pubDate = get('pubDate') || get('published') || get('updated') || null
 
     return { title, description, link, image, pubDate }
-  }).filter((a) => a.title && a.link)
+  }).filter((a) => a.title && a.link))
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -649,9 +674,9 @@ function FeedColumn({ feed, category }) {
 
   useEffect(() => { load() }, [load])
 
-  // Auto-refresh every 10 minutes
+  // Auto-refresh every 5 minutes
   useEffect(() => {
-    const id = setInterval(load, 10 * 60 * 1000)
+    const id = setInterval(load, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [load])
 
