@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy } from 'lucide-react'
+import { Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import CommandPalette from './CommandPalette'
 
 const NAV_ITEMS = [
   { path: '/news',     icon: Newspaper,  label: 'News Tracker',     description: 'Live global & local RSS feeds' },
@@ -9,6 +10,7 @@ const NAV_ITEMS = [
   { path: '/cv',       icon: FileText,   label: 'CV Builder',       description: 'Build and export your Lebenslauf' },
   { path: '/radio',    icon: Radio,      label: 'Live Radio',       description: 'World map of live radio stations' },
   { path: '/football', icon: Trophy,     label: 'Football Today',   description: "Today's scores & fixtures" },
+  { path: '/finance',  icon: DollarSign, label: 'Finance Watch',    description: 'FX rates & crypto prices' },
 ]
 
 function formatDate(date) {
@@ -32,6 +34,18 @@ export default function Layout() {
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 768)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [weather, setWeather]       = useState(null)   // { temp, icon, city }
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // ⌘K / Ctrl+K opens the command palette globally
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault(); setPaletteOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -112,6 +126,7 @@ export default function Layout() {
 
   return (
     <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* ── Backdrop (mobile only) ── */}
       {isMobile && sidebarOpen && (
@@ -210,6 +225,30 @@ export default function Layout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            {/* ⌘K trigger */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              title="Command palette (⌘K)"
+              aria-label="Open command palette"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+                borderRadius: 6, padding: isMobile ? '0.3rem 0.45rem' : '0.25rem 0.55rem',
+                color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.7rem',
+                fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+            >
+              <Search size={12} />
+              {!isMobile && <>
+                <span>Search</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 5px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 3, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem', fontWeight: 600 }}>
+                  <Command size={9} />K
+                </span>
+              </>}
+            </button>
+
             {/* Weather pill */}
             {weather && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.2rem 0.55rem', whiteSpace: 'nowrap' }}>
