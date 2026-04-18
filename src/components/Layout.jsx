@@ -1,9 +1,10 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command } from 'lucide-react'
+import { Home as HomeIcon, Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command, Sun, Moon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
 
 const NAV_ITEMS = [
+  { path: '/home',     icon: HomeIcon,   label: 'Home',             description: 'Your daily snapshot' },
   { path: '/news',     icon: Newspaper,  label: 'News Tracker',     description: 'Live global & local RSS feeds' },
   { path: '/jobs',     icon: Briefcase,  label: 'Job Hunter',       description: 'Search German job listings' },
   { path: '/language', icon: BookOpen,   label: 'Language Planner', description: 'Weekly language learning tracker' },
@@ -12,6 +13,16 @@ const NAV_ITEMS = [
   { path: '/football', icon: Trophy,     label: 'Football Today',   description: "Today's scores & fixtures" },
   { path: '/finance',  icon: DollarSign, label: 'Finance Watch',    description: 'FX rates & crypto prices' },
 ]
+
+const THEME_KEY = 'zentry:theme'
+// Read initial theme synchronously to avoid a flash-of-wrong-theme on mount.
+function readTheme() {
+  try {
+    const v = localStorage.getItem(THEME_KEY)
+    if (v === 'light' || v === 'dark') return v
+  } catch { /* ignore */ }
+  return 'dark'
+}
 
 function formatDate(date) {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
@@ -35,6 +46,14 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [weather, setWeather]       = useState(null)   // { temp, icon, city }
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [theme, setTheme]           = useState(readTheme)
+
+  // Apply theme to <html> and persist any time it changes.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem(THEME_KEY, theme) } catch { /* ignore */ }
+  }, [theme])
+  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   // ⌘K / Ctrl+K opens the command palette globally
   useEffect(() => {
@@ -193,7 +212,7 @@ export default function Layout() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 1rem 0 1rem',
           borderBottom: '1px solid var(--border)',
-          background: 'rgba(10, 10, 15, 0.8)',
+          background: 'var(--header-bg)',
           backdropFilter: 'blur(8px)',
           gap: '0.75rem',
         }}>
@@ -225,6 +244,24 @@ export default function Layout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+              aria-label="Toggle theme"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28,
+                background: 'var(--input-bg)', border: '1px solid var(--border)',
+                borderRadius: 6, color: 'var(--text-secondary)', cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+            >
+              {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            </button>
+
             {/* ⌘K trigger */}
             <button
               onClick={() => setPaletteOpen(true)}
@@ -279,7 +316,7 @@ export default function Layout() {
           padding: '0.5rem 1.25rem',
           borderTop: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
-          background: 'rgba(10,10,15,0.8)',
+          background: 'var(--header-bg)',
         }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.65rem', color: 'var(--text-muted)' }}>
             © {new Date().getFullYear()} Lauger · Zentry

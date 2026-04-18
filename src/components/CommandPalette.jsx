@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Newspaper, Briefcase, BookOpen, FileText, Radio, Trophy, DollarSign,
+  Search, Home as HomeIcon, Newspaper, Briefcase, BookOpen, FileText, Radio, Trophy, DollarSign,
   ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, Command,
 } from 'lucide-react'
 
@@ -9,6 +9,7 @@ import {
 // Adding a new tool? Drop it here.
 const COMMANDS = [
   // Tools
+  { id: 'tool-home',     group: 'Tools', icon: HomeIcon,  label: 'Home',             hint: 'Daily dashboard',                 path: '/home',     keywords: 'overview dashboard start' },
   { id: 'tool-news',     group: 'Tools', icon: Newspaper, label: 'News Tracker',     hint: 'Live RSS feeds',                  path: '/news',     keywords: 'headlines articles rss' },
   { id: 'tool-jobs',     group: 'Tools', icon: Briefcase, label: 'Job Hunter',       hint: 'German job listings',             path: '/jobs',     keywords: 'work career employment bundesagentur' },
   { id: 'tool-language', group: 'Tools', icon: BookOpen,  label: 'Language Planner', hint: 'Weekly learning tracker',         path: '/language', keywords: 'learn study vocabulary' },

@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 // Lazy-load each tool so the initial bundle only ships what's visible on first paint.
 // react-simple-maps + the topojson atlas are heavy — splitting keeps that out of the
 // critical path unless the user actually opens Live Radio.
+const Home           = lazy(() => import('./pages/Home'))
 const NewsTracker    = lazy(() => import('./pages/NewsTracker'))
 const JobHunter      = lazy(() => import('./pages/JobHunter'))
 const LanguagePlanner= lazy(() => import('./pages/LanguagePlanner'))
@@ -29,7 +30,8 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/news" replace />} />
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="home"     element={<Suspense fallback={<PageFallback />}><Home /></Suspense>} />
           <Route path="news"     element={<Suspense fallback={<PageFallback />}><NewsTracker /></Suspense>} />
           <Route path="jobs"     element={<Suspense fallback={<PageFallback />}><JobHunter /></Suspense>} />
           <Route path="language" element={<Suspense fallback={<PageFallback />}><LanguagePlanner /></Suspense>} />
