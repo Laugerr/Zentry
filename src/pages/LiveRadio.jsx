@@ -142,7 +142,7 @@ const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) }
 
 // ─── Mini player bar ──────────────────────────────────────────────────────────
 
-function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolume }) {
+function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolume, isMobile }) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -256,7 +256,11 @@ function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolu
 
   return (
     <div style={{
-      position: 'sticky', bottom: 0, left: 0, right: 0,
+      // On mobile pin to the viewport so it's always visible once a station
+      // is playing — sticky inside a flex-column chain with soft heights
+      // behaved inconsistently (it ended up below the map, off-screen).
+      position: isMobile ? 'fixed' : 'sticky',
+      bottom: 0, left: 0, right: 0,
       background: 'rgba(10,10,15,0.96)', backdropFilter: 'blur(12px)',
       borderTop: `1px solid ${color}44`,
       padding: '0.75rem 1.25rem',
@@ -698,9 +702,12 @@ export default function LiveRadio() {
   // without duplicating markup or causing key/remount churn.
   const listPanel = (
     <div style={{
-      flex: isMobile ? '1 1 0' : '2',
-      width: isMobile ? '100%' : undefined,
-      minHeight: 0,
+      // On mobile we anchor the list to a concrete viewport-relative height so
+      // it doesn't collapse when the PlayerBar appears or when the root's
+      // `height: 100%` doesn't resolve cleanly through the nested flex chain.
+      ...(isMobile
+        ? { flex: 'none', width: '100%', height: 'min(55vh, 480px)' }
+        : { flex: '2', minHeight: 0 }),
       display: 'flex', flexDirection: 'column',
       background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden',
     }}>
@@ -826,18 +833,17 @@ export default function LiveRadio() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-            {/* List toggle — desktop only; on mobile the list is always shown above the map */}
-            {!isMobile && (
-              <button onClick={() => setShowList((v) => !v)}
-                title={showList ? 'Hide list' : 'Show list'}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem',
-                  padding: '0.4rem 0.65rem', background: showList ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)',
-                  border: `1px solid ${showList ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`, borderRadius: 8,
-                  color: showList ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
-                {showList ? <List size={13} /> : <MapIcon size={13} />}
-                {showList ? 'Hide list' : 'Show list'}
-              </button>
-            )}
+            {/* List toggle — available on every breakpoint so users who closed the
+                list on mobile (via its X button) can get it back. */}
+            <button onClick={() => setShowList((v) => !v)}
+              title={showList ? 'Hide list' : 'Show list'}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.4rem 0.65rem', background: showList ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)',
+                border: `1px solid ${showList ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`, borderRadius: 8,
+                color: showList ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+              {showList ? <List size={13} /> : <MapIcon size={13} />}
+              {!isMobile && (showList ? 'Hide list' : 'Show list')}
+            </button>
 
             {/* Zoom — desktop only; mobile uses native pinch-zoom from ZoomableGroup */}
             {!isMobile && (
@@ -885,10 +891,15 @@ export default function LiveRadio() {
               <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: showGenre ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
             {showGenre && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
-                background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: 4, minWidth: 180, maxHeight: 320, overflowY: 'auto',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+              <div style={isMobile
+                ? { position: 'fixed', top: 'auto', bottom: 12, left: 12, right: 12, zIndex: 200,
+                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                    borderRadius: 12, padding: 4, maxHeight: '60vh', overflowY: 'auto',
+                    boxShadow: '0 12px 48px rgba(0,0,0,0.6)' }
+                : { position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
+                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                    borderRadius: 10, padding: 4, minWidth: 180, maxHeight: 320, overflowY: 'auto',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                 {GENRES.map((g) => (
                   <button key={g.id}
                     onClick={() => { setGenre(g.id); setShowGenre(false) }}
@@ -914,10 +925,15 @@ export default function LiveRadio() {
               <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: showCountry ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
             {showCountry && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
-                background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: 4, minWidth: 200, maxHeight: 320, overflowY: 'auto',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+              <div style={isMobile
+                ? { position: 'fixed', top: 'auto', bottom: 12, left: 12, right: 12, zIndex: 200,
+                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                    borderRadius: 12, padding: 4, maxHeight: '60vh', overflowY: 'auto',
+                    boxShadow: '0 12px 48px rgba(0,0,0,0.6)' }
+                : { position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
+                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                    borderRadius: 10, padding: 4, minWidth: 200, maxHeight: 320, overflowY: 'auto',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                 <button onClick={() => { setCountry(''); setShowCountry(false) }}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
                     padding: '0.4rem 0.6rem', background: !country ? 'rgba(167,139,250,0.12)' : 'transparent',
@@ -1049,8 +1065,11 @@ export default function LiveRadio() {
           onShuffle={onShuffle}
           volume={volume}
           setVolume={setVolume}
+          isMobile={isMobile}
         />
       )}
+      {/* Spacer so fixed mobile player doesn't overlap the last bits of content */}
+      {active && isMobile && <div style={{ height: 92, flexShrink: 0 }} />}
 
       <style>{`
         @keyframes pulse-ring {
