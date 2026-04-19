@@ -379,8 +379,16 @@ function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolu
 // Markers only re-render when their own state (isActive/isFav) or station changes.
 // Without this, hovering a single dot would re-render every other dot.
 
+// Radii tuned so that at zoom=1 the world view doesn't look like a pixel flood.
+// react-simple-maps scales markers with ZoomableGroup's SVG transform, so
+// zooming in already grows them — we just need the base radius to be small.
+const R_DEFAULT = 1.3
+const R_FAV     = 1.8
+const R_ACTIVE  = 3.2
+
 const StationMarker = memo(function StationMarker({ station, isActive, isFav, onEnter, onLeave, onClick }) {
   const color = station._color
+  const r = isActive ? R_ACTIVE : isFav ? R_FAV : R_DEFAULT
   return (
     <Marker
       coordinates={[station._lon, station._lat]}
@@ -390,14 +398,14 @@ const StationMarker = memo(function StationMarker({ station, isActive, isFav, on
       style={{ cursor: 'pointer' }}
     >
       <circle
-        r={isActive ? 5 : isFav ? 3.5 : 3}
+        r={r}
         fill={color}
-        fillOpacity={isActive ? 1 : 0.75}
+        fillOpacity={isActive ? 1 : isFav ? 0.9 : 0.65}
         stroke={isActive ? '#fff' : isFav ? '#facc15' : color}
-        strokeWidth={isActive ? 1.5 : isFav ? 1 : 0.5}
+        strokeWidth={isActive ? 1.2 : isFav ? 0.8 : 0.3}
       />
       {isActive && (
-        <circle r={9} fill="none" stroke={color} strokeWidth={1} strokeOpacity={0.5}
+        <circle r={7} fill="none" stroke={color} strokeWidth={0.8} strokeOpacity={0.5}
           style={{ animation: 'pulse-ring 1.5s ease-out infinite' }} />
       )}
     </Marker>
@@ -459,6 +467,7 @@ export default function LiveRadio() {
   const [showGenre,  setShowGenre]  = useState(false)
   const [showCountry,setShowCountry]= useState(false)
   const [showList,   setShowList]   = useState(true)
+  const [nowPlaying, setNowPlaying] = useState(null) // { station, ts } — brief pill on mobile
   const [listTab,    setListTab]    = useState('all')        // all | favs | recents
   const [volume,     setVolume]     = useState(() => {
     const v = readJSON(LS.volume, 0.8)
@@ -474,18 +483,26 @@ export default function LiveRadio() {
   useEffect(() => { writeJSON(LS.recents, recents) }, [recents])
   useEffect(() => { if (active) writeJSON(LS.last, active) }, [active])
 
-  // Responsive
+  // Responsive — on mobile we keep the list open (it's the primary surface now).
   useEffect(() => {
-    const onResize = () => {
-      const m = window.innerWidth < 768
-      setIsMobile(m)
-      if (m) setShowList(false)
-    }
+    const onResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', onResize)
-    if (isMobile) setShowList(false)
     return () => window.removeEventListener('resize', onResize)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Observe theme so the map palette follows dark/light mode without a reload.
+  const [theme, setTheme] = useState(() => typeof document !== 'undefined'
+    ? document.documentElement.dataset.theme || 'dark' : 'dark')
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const el = document.documentElement
+    const obs = new MutationObserver(() => setTheme(el.dataset.theme || 'dark'))
+    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => obs.disconnect()
+  }, [])
+  const mapPalette = theme === 'light'
+    ? { bg: '#f1f3f8', land: '#e5e7eb', stroke: '#cbd1da', hover: '#dadee8', hoverStroke: '#9ca3af' }
+    : { bg: 'rgba(10,12,20,0.9)', land: '#1e2235', stroke: '#2d3250', hover: '#252840', hoverStroke: '#3d4270' }
 
   // Load stations whenever filters change
   const load = useCallback(async (g, c) => {
@@ -501,6 +518,25 @@ export default function LiveRadio() {
   }, [])
 
   useEffect(() => { load(genre, country) }, [load, genre, country])
+
+  // Auto-dismiss the "now playing" pill after a moment.
+  useEffect(() => {
+    if (!nowPlaying) return
+    const id = setTimeout(() => setNowPlaying(null), 2400)
+    return () => clearTimeout(id)
+  }, [nowPlaying])
+
+  // When a country filter is selected, pan/zoom the map to it for instant context.
+  // When cleared, snap back to the world view.
+  useEffect(() => {
+    if (!country) { setZoom(1); setCenter([0, 20]); return }
+    // Station list may not have reloaded yet — guard on stations content.
+    const one = stations.find((s) => s.countrycode === country)
+    if (one && Number.isFinite(one._lon) && Number.isFinite(one._lat)) {
+      setCenter([one._lon, one._lat])
+      setZoom(4)
+    }
+  }, [country, stations])
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -542,6 +578,25 @@ export default function LiveRadio() {
     [baseFiltered]
   )
 
+  // Zoom-adaptive density thinning — at world view, drop markers that collide
+  // into the same coarse lat/lon bucket so the map doesn't look like noise.
+  // Active + favourites are always shown (they shouldn't disappear when zoomed out).
+  const favouriteSet = useMemo(() => new Set(favourites.map((f) => f.stationuuid)), [favourites])
+  const displayedMarkers = useMemo(() => {
+    if (zoom >= 3) return mapMarkers
+    const cell = zoom < 1.3 ? 4 : zoom < 2 ? 2 : 1   // degrees; shrinks as we zoom in
+    const grid = new Map()
+    const pinned = []
+    for (const s of mapMarkers) {
+      const isPinned = active?.stationuuid === s.stationuuid || favouriteSet.has(s.stationuuid)
+      if (isPinned) { pinned.push(s); continue }
+      const k = `${Math.round(s._lat / cell)}|${Math.round(s._lon / cell)}`
+      const cur = grid.get(k)
+      if (!cur || (s.clickcount || 0) > (cur.clickcount || 0)) grid.set(k, s)
+    }
+    return [...pinned, ...grid.values()]
+  }, [mapMarkers, zoom, active, favouriteSet])
+
   // List subset based on tab
   const listData = useMemo(() => {
     let data = baseFiltered
@@ -568,12 +623,14 @@ export default function LiveRadio() {
     return sorted
   }, [baseFiltered, listTab, favourites, recents, stations, sort, search, genre, country])
 
-  const favouriteSet = useMemo(() => new Set(favourites.map((f) => f.stationuuid)), [favourites])
-
   const playStation = useCallback((station) => {
     setActive(station)
     setTooltip(null)
     pingClick(station.stationuuid)
+    // Brief "now playing" pill (mostly for mobile where the player is below the fold).
+    setNowPlaying({ station, ts: Date.now() })
+    // Subtle haptic tick on devices that support it.
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8)
     setRecents((prev) => {
       const filtered = prev.filter((s) => s.stationuuid !== station.stationuuid)
       const minimal = { stationuuid: station.stationuuid, name: station.name, country: station.country,
@@ -584,11 +641,14 @@ export default function LiveRadio() {
     })
   }, [])
 
-  // Stable marker callbacks so memoized StationMarker doesn't re-render on every state change
+  // Stable marker callbacks so memoized StationMarker doesn't re-render on every state change.
+  // On mobile we skip hover-tooltips entirely (they collide with the tap-to-play gesture
+  // and linger after touchstart); the "now playing" pill takes their place.
   const onMarkerEnter = useCallback((e, station) => {
+    if (isMobile) return
     const rect = mapRef.current?.getBoundingClientRect()
     setTooltip({ x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0), station })
-  }, [])
+  }, [isMobile])
   const onMarkerLeave = useCallback(() => setTooltip(null), [])
 
   const toggleFav = useCallback((station) => {
@@ -632,42 +692,193 @@ export default function LiveRadio() {
   const activeGenre   = GENRES.find((g) => g.id === genre)
   const activeCountry = countryOptions.find((c) => c.code === country)
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+  // Station list panel — rendered in one of two slots depending on breakpoint.
+  // Extracted as a variable (not a component) so the same JSX is shared
+  // between the mobile-first-above-map and desktop-right-of-map positions
+  // without duplicating markup or causing key/remount churn.
+  const listPanel = (
+    <div style={{
+      flex: isMobile ? '1 1 0' : '2',
+      width: isMobile ? '100%' : undefined,
+      minHeight: 0,
+      display: 'flex', flexDirection: 'column',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden',
+    }}>
+      {/* List header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.5rem 0.6rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        {[
+          { id: 'all',     label: 'All',     count: baseFiltered.length },
+          { id: 'favs',    label: '★ Favs',  count: favourites.length },
+          { id: 'recents', label: 'Recent',  count: recents.length },
+        ].map((t) => {
+          const isA = listTab === t.id
+          return (
+            <button key={t.id} onClick={() => setListTab(t.id)}
+              style={{ padding: '0.3rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: isA ? 700 : 500,
+                border: isA ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
+                background: isA ? 'rgba(167,139,250,0.12)' : 'transparent',
+                color: isA ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              {t.label}<span style={{ fontSize: '0.62rem', opacity: 0.7 }}>{t.count}</span>
+            </button>
+          )
+        })}
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.02em' }}>📻 Live Radio</h2>
-          <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {loading
-              ? 'Loading stations…'
-              : `${baseFiltered.length.toLocaleString()} stations${baseFiltered.length > 1500 ? ' (top 1500 on map)' : ''} · Space / N / P / S / M / ↑↓`
-            }
-          </p>
+        <select value={sort} onChange={(e) => setSort(e.target.value)}
+          style={{ marginLeft: 'auto', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+            color: 'var(--text-secondary)', fontSize: '0.7rem', padding: '0.25rem 0.4rem', borderRadius: 6, cursor: 'pointer' }}>
+          <option value="popularity">Popular</option>
+          <option value="name">Name</option>
+          <option value="bitrate">Bitrate</option>
+        </select>
+        {isMobile && (
+          <button onClick={() => setShowList(false)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* List body — flex:1 + minHeight:0 on parent is what lets overflow-y:auto actually scroll */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+        {loading && [...Array(8)].map((_, i) => (
+          <div key={i} style={{ height: 40, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
+        ))}
+        {!loading && listData.length === 0 && (
+          <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+            {listTab === 'favs'
+              ? 'No favourites yet. Star stations to save them here.'
+              : listTab === 'recents'
+                ? 'Nothing played yet.'
+                : 'No stations match the current filters.'}
+          </div>
+        )}
+        {!loading && listData.slice(0, 500).map((s) => (
+          <StationRow key={s.stationuuid} station={s}
+            active={active?.stationuuid === s.stationuuid}
+            favourite={favouriteSet.has(s.stationuuid)}
+            onPlay={playStation}
+            onToggleFav={toggleFav} />
+        ))}
+        {!loading && listData.length > 500 && (
+          <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', padding: '0.5rem' }}>
+            Showing first 500 of {listData.length.toLocaleString()}. Narrow your filters for more.
+          </div>
+        )}
+      </div>
+
+      {listTab === 'recents' && recents.length > 0 && (
+        <button onClick={() => setRecents([])}
+          style={{ borderTop: '1px solid var(--border)', padding: '0.5rem', background: 'transparent',
+            border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', flexShrink: 0 }}>
+          <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />
+          Clear history
+        </button>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', position: 'relative' }}>
+
+      {/* "Now playing" pill — appears briefly when a station is selected.
+          Useful on mobile where the player bar may be below the fold,
+          and as a quick confirmation of the tap on desktop too. */}
+      {nowPlaying && (
+        <div style={{
+          position: 'fixed', top: isMobile ? 64 : 76, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 60, pointerEvents: 'none',
+          background: 'rgba(10,12,20,0.92)', color: 'var(--text-primary)',
+          border: `1px solid ${nowPlaying.station._color ?? genreColor(nowPlaying.station.tags)}55`,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.35), 0 0 20px rgba(139,92,246,0.15)',
+          borderRadius: 999, padding: '0.45rem 0.9rem',
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          fontSize: '0.78rem', maxWidth: 'min(420px, 92vw)',
+          animation: 'np-in 0.22s ease-out',
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999,
+            background: nowPlaying.station._color ?? genreColor(nowPlaying.station.tags),
+            animation: 'pulse 1.3s ease-in-out infinite', flexShrink: 0 }} />
+          <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>
+            {nowPlaying.station.name}
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            · {nowPlaying.station.country || nowPlaying.station.countrycode || '—'}
+          </span>
+        </div>
+      )}
+
+      {/* Header — two explicit rows (no more wrap-lottery).
+          Row 1: title + subtitle + secondary controls (list toggle, zoom).
+          Row 2: search (fills available width) + genre + country chips. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '0.75rem' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.02em' }}>📻 Live Radio</h2>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {loading
+                ? 'Loading stations…'
+                : isMobile
+                  ? `${baseFiltered.length.toLocaleString()} stations · tap any dot to play`
+                  : `${baseFiltered.length.toLocaleString()} stations · ${displayedMarkers.length.toLocaleString()} on map · Space / N / P / S / M / ↑↓`
+              }
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+            {/* List toggle — desktop only; on mobile the list is always shown above the map */}
+            {!isMobile && (
+              <button onClick={() => setShowList((v) => !v)}
+                title={showList ? 'Hide list' : 'Show list'}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem',
+                  padding: '0.4rem 0.65rem', background: showList ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)',
+                  border: `1px solid ${showList ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`, borderRadius: 8,
+                  color: showList ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                {showList ? <List size={13} /> : <MapIcon size={13} />}
+                {showList ? 'Hide list' : 'Show list'}
+              </button>
+            )}
+
+            {/* Zoom — desktop only; mobile uses native pinch-zoom from ZoomableGroup */}
+            {!isMobile && (
+              <div style={{ display: 'flex', gap: '0.3rem' }}>
+                {[['−', () => setZoom((z) => Math.max(1, z / 1.5))],
+                  ['+', () => setZoom((z) => Math.min(12, z * 1.5))],
+                  ['↺', () => { setZoom(1); setCenter([0, 20]) }]].map(([label, fn]) => (
+                  <button key={label} onClick={fn}
+                    style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-card)',
+                      color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Search */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {/* Search — flex: 1 so it fills whatever's left */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: '1 1 220px', minWidth: 0 }}>
             <Search size={13} style={{ position: 'absolute', left: '0.6rem', color: 'var(--text-muted)', pointerEvents: 'none' }} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name / country / tag…"
+              placeholder={isMobile ? 'Search stations…' : 'Search name / country / tag…'}
               style={{
-                paddingLeft: '2rem', paddingRight: '0.75rem', paddingTop: '0.4rem', paddingBottom: '0.4rem',
+                flex: 1, width: '100%',
+                paddingLeft: '2rem', paddingRight: '0.75rem', paddingTop: '0.45rem', paddingBottom: '0.45rem',
                 background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8,
-                color: 'var(--text-primary)', fontSize: '0.78rem', outline: 'none', width: isMobile ? '100%' : 220,
+                color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none',
               }}
             />
           </div>
 
           {/* Genre */}
-          <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => { setShowGenre((v) => !v); setShowCountry(false) }}
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.4rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
+                padding: '0.45rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
                 borderRadius: 8, color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
               <span>{activeGenre?.emoji}</span>
               <span>{activeGenre?.label}</span>
@@ -693,10 +904,10 @@ export default function LiveRadio() {
           </div>
 
           {/* Country */}
-          <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => { setShowCountry((v) => !v); setShowGenre(false) }}
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.4rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
+                padding: '0.45rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
                 borderRadius: 8, color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
               <Globe size={12} />
               <span>{country ? (activeCountry?.name || country) : 'Worldwide'}</span>
@@ -728,64 +939,29 @@ export default function LiveRadio() {
               </div>
             )}
           </div>
-
-          {/* List toggle */}
-          <button onClick={() => setShowList((v) => !v)}
-            title={showList ? 'Hide list' : 'Show list'}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem',
-              padding: '0.4rem 0.65rem', background: showList ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)',
-              border: `1px solid ${showList ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`, borderRadius: 8,
-              color: showList ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
-            {showList ? <List size={13} /> : <MapIcon size={13} />}
-            {showList ? 'List' : 'List'}
-          </button>
-
-          {/* Zoom */}
-          <div style={{ display: 'flex', gap: '0.3rem' }}>
-            {[['−', () => setZoom((z) => Math.max(1, z / 1.5))],
-              ['+', () => setZoom((z) => Math.min(12, z * 1.5))],
-              ['↺', () => { setZoom(1); setCenter([0, 20]) }]].map(([label, fn]) => (
-              <button key={label} onClick={fn}
-                style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-card)',
-                  color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-        {[
-          { color: '#f87171', label: 'News/Talk' },
-          { color: '#fbbf24', label: 'Jazz/Blues' },
-          { color: '#a78bfa', label: 'Classical' },
-          { color: '#f472b6', label: 'Pop' },
-          { color: '#fb923c', label: 'Rock/Indie' },
-          { color: '#22d3ee', label: 'Electronic/Dance' },
-          { color: '#c084fc', label: 'Hip-Hop/R&B' },
-          { color: '#fde047', label: 'Reggae/Latin' },
-          { color: '#84cc16', label: 'Country/Folk' },
-          { color: '#34d399', label: 'Ambient' },
-          { color: '#60a5fa', label: 'World' },
-        ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-            {label}
-          </div>
-        ))}
-      </div>
+      {/* Map + List layout.
+          Mobile: list first (primary touch surface), then a short fixed-height map.
+          Desktop: map left, list right. We render the two sections in explicit
+          order per breakpoint rather than using `column-reverse` — the latter was
+          fighting the list's internal scroll and producing the visual mess where
+          the header appeared to float inside the list. */}
+      <div style={{
+        flex: 1, display: 'flex', gap: '1rem', minHeight: 0,
+        flexDirection: isMobile ? 'column' : 'row',
+      }}>
 
-      {/* Map + List layout */}
-      <div style={{ flex: 1, display: 'flex', gap: '1rem', minHeight: 0, flexDirection: isMobile ? 'column' : 'row' }}>
+        {/* --- MOBILE: list first --- */}
+        {isMobile && showList && listPanel}
 
         {/* Map */}
         <div ref={mapRef} style={{
-          flex: showList && !isMobile ? '3' : '1',
-          minHeight: isMobile ? 320 : 420, position: 'relative',
-          background: 'rgba(10,12,20,0.9)', border: '1px solid var(--border)',
+          flex: isMobile ? 'none' : (showList ? '3' : '1'),
+          height: isMobile ? 240 : undefined,
+          minHeight: isMobile ? 240 : 420, position: 'relative',
+          background: mapPalette.bg, border: '1px solid var(--border)',
           borderRadius: 14, overflow: 'hidden',
         }}>
           {loading && (
@@ -811,16 +987,16 @@ export default function LiveRadio() {
                       key={geo.rsmKey}
                       geography={geo}
                       style={{
-                        default: { fill: '#1e2235', stroke: '#2d3250', strokeWidth: 0.4, outline: 'none' },
-                        hover:   { fill: '#252840', stroke: '#3d4270', strokeWidth: 0.4, outline: 'none' },
-                        pressed: { fill: '#252840', outline: 'none' },
+                        default: { fill: mapPalette.land,  stroke: mapPalette.stroke,      strokeWidth: 0.4, outline: 'none' },
+                        hover:   { fill: mapPalette.hover, stroke: mapPalette.hoverStroke, strokeWidth: 0.4, outline: 'none' },
+                        pressed: { fill: mapPalette.hover, outline: 'none' },
                       }}
                     />
                   ))
                 }
               </Geographies>
 
-              {!loading && mapMarkers.map((station) => (
+              {!loading && displayedMarkers.map((station) => (
                 <StationMarker
                   key={station.stationuuid}
                   station={station}
@@ -859,88 +1035,8 @@ export default function LiveRadio() {
           )}
         </div>
 
-        {/* Station list sidebar */}
-        {showList && (
-          <div style={{
-            flex: isMobile ? 'none' : '2', width: isMobile ? '100%' : undefined,
-            minHeight: isMobile ? 260 : undefined,
-            display: 'flex', flexDirection: 'column',
-            background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden',
-          }}>
-            {/* List header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.5rem 0.6rem', borderBottom: '1px solid var(--border)' }}>
-              {[
-                { id: 'all',     label: 'All',     count: baseFiltered.length },
-                { id: 'favs',    label: '★ Favs',  count: favourites.length },
-                { id: 'recents', label: 'Recent',  count: recents.length },
-              ].map((t) => {
-                const isA = listTab === t.id
-                return (
-                  <button key={t.id} onClick={() => setListTab(t.id)}
-                    style={{ padding: '0.3rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: isA ? 700 : 500,
-                      border: isA ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
-                      background: isA ? 'rgba(167,139,250,0.12)' : 'transparent',
-                      color: isA ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                    {t.label}<span style={{ fontSize: '0.62rem', opacity: 0.7 }}>{t.count}</span>
-                  </button>
-                )
-              })}
-
-              <select value={sort} onChange={(e) => setSort(e.target.value)}
-                style={{ marginLeft: 'auto', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                  color: 'var(--text-secondary)', fontSize: '0.7rem', padding: '0.25rem 0.4rem', borderRadius: 6, cursor: 'pointer' }}>
-                <option value="popularity">Popular</option>
-                <option value="name">Name</option>
-                <option value="bitrate">Bitrate</option>
-              </select>
-              {isMobile && (
-                <button onClick={() => setShowList(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* List body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              {loading && [...Array(8)].map((_, i) => (
-                <div key={i} style={{ height: 40, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-              ))}
-              {!loading && listData.length === 0 && (
-                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                  {listTab === 'favs'
-                    ? 'No favourites yet. Star stations to save them here.'
-                    : listTab === 'recents'
-                      ? 'Nothing played yet.'
-                      : 'No stations match the current filters.'}
-                </div>
-              )}
-              {!loading && listData.slice(0, 500).map((s) => (
-                <StationRow key={s.stationuuid} station={s}
-                  active={active?.stationuuid === s.stationuuid}
-                  favourite={favouriteSet.has(s.stationuuid)}
-                  onPlay={playStation}
-                  onToggleFav={toggleFav} />
-              ))}
-              {!loading && listData.length > 500 && (
-                <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', padding: '0.5rem' }}>
-                  Showing first 500 of {listData.length.toLocaleString()}. Narrow your filters for more.
-                </div>
-              )}
-            </div>
-
-            {/* Status counters */}
-            {listTab === 'recents' && recents.length > 0 && (
-              <button onClick={() => setRecents([])}
-                style={{ borderTop: '1px solid var(--border)', padding: '0.5rem', background: 'transparent',
-                  border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer' }}>
-                <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />
-                Clear history
-              </button>
-            )}
-          </div>
-        )}
+        {/* --- DESKTOP: list on the right --- */}
+        {!isMobile && showList && listPanel}
       </div>
 
       {/* Player */}
@@ -958,8 +1054,12 @@ export default function LiveRadio() {
 
       <style>{`
         @keyframes pulse-ring {
-          0%   { r: 6;  stroke-opacity: 0.6; }
-          100% { r: 14; stroke-opacity: 0;   }
+          0%   { r: 5;  stroke-opacity: 0.6; }
+          100% { r: 12; stroke-opacity: 0;   }
+        }
+        @keyframes np-in {
+          from { opacity: 0; transform: translate(-50%, -6px); }
+          to   { opacity: 1; transform: translate(-50%, 0);    }
         }
       `}</style>
     </div>
