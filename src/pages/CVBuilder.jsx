@@ -983,10 +983,41 @@ export default function CVBuilder() {
         setToast({ msg: 'URL too long — try removing photo or trimming content', kind: 'warn' })
         return
       }
-      await navigator.clipboard.writeText(url)
-      setToast({ msg: 'Shareable link copied to clipboard', kind: 'ok' })
+      const ok = await copyToClipboard(url)
+      setToast(ok
+        ? { msg: 'Shareable link copied to clipboard', kind: 'ok' }
+        : { msg: 'Couldn\u2019t copy — link logged to console', kind: 'warn' })
+      if (!ok) console.log('[CV share link]', url)
     } catch {
       setToast({ msg: 'Couldn\u2019t create share link', kind: 'err' })
+    }
+  }
+
+  // Clipboard with a textarea fallback for insecure contexts (file://, http://)
+  // where navigator.clipboard is unavailable. Returns true on success.
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+    } catch { /* fall through to legacy path */ }
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.setAttribute('readonly', '')
+      ta.style.position = 'fixed'
+      ta.style.top = '0'
+      ta.style.left = '0'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      ta.setSelectionRange(0, text.length)
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      return ok
+    } catch {
+      return false
     }
   }
 

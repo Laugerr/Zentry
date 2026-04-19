@@ -1,6 +1,7 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import Layout from './components/Layout'
+import PageErrorBoundary from './components/PageErrorBoundary'
 
 // Lazy-load each tool so the initial bundle only ships what's visible on first paint.
 // react-simple-maps + the topojson atlas are heavy — splitting keeps that out of the
@@ -23,6 +24,17 @@ function PageFallback() {
   )
 }
 
+// Wrap every page in an error boundary so a single bad fetch / render doesn't
+// blank the whole app. Keying the boundary on pathname resets it on navigation.
+function Page({ children }) {
+  const location = useLocation()
+  return (
+    <PageErrorBoundary key={location.pathname}>
+      <Suspense fallback={<PageFallback />}>{children}</Suspense>
+    </PageErrorBoundary>
+  )
+}
+
 // App uses HashRouter so GitHub Pages works without server-side routing.
 // To add a new tool: import it here and add a <Route> + a nav entry in Layout.jsx.
 export default function App() {
@@ -31,14 +43,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/home" replace />} />
-          <Route path="home"     element={<Suspense fallback={<PageFallback />}><Home /></Suspense>} />
-          <Route path="news"     element={<Suspense fallback={<PageFallback />}><NewsTracker /></Suspense>} />
-          <Route path="jobs"     element={<Suspense fallback={<PageFallback />}><JobHunter /></Suspense>} />
-          <Route path="language" element={<Suspense fallback={<PageFallback />}><LanguagePlanner /></Suspense>} />
-          <Route path="cv"       element={<Suspense fallback={<PageFallback />}><CVBuilder /></Suspense>} />
-          <Route path="radio"    element={<Suspense fallback={<PageFallback />}><LiveRadio /></Suspense>} />
-          <Route path="football" element={<Suspense fallback={<PageFallback />}><FootballToday /></Suspense>} />
-          <Route path="finance"  element={<Suspense fallback={<PageFallback />}><FinanceWatch /></Suspense>} />
+          <Route path="home"     element={<Page><Home /></Page>} />
+          <Route path="news"     element={<Page><NewsTracker /></Page>} />
+          <Route path="jobs"     element={<Page><JobHunter /></Page>} />
+          <Route path="language" element={<Page><LanguagePlanner /></Page>} />
+          <Route path="cv"       element={<Page><CVBuilder /></Page>} />
+          <Route path="radio"    element={<Page><LiveRadio /></Page>} />
+          <Route path="football" element={<Page><FootballToday /></Page>} />
+          <Route path="finance"  element={<Page><FinanceWatch /></Page>} />
         </Route>
       </Routes>
     </HashRouter>
