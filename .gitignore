@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.tools/
+.npm-cache/
 
 # Build output
 dist/

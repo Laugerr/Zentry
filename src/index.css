@@ -299,6 +299,62 @@
     }
   }
 
+  /* Hero time-of-day ambient glow */
+  .hero-tod::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: hero-glow-breathe 8s ease-in-out infinite;
+    z-index: 0;
+  }
+
+  .hero-night::before {
+    background: radial-gradient(ellipse at 85% 30%, rgba(139, 92, 246, 0.18) 0%, transparent 65%);
+  }
+  .hero-morning::before {
+    background: radial-gradient(ellipse at 95% 90%, rgba(251, 146, 60, 0.20) 0%, transparent 60%);
+  }
+  .hero-afternoon::before {
+    background: radial-gradient(ellipse at 50% 0%, rgba(96, 165, 250, 0.16) 0%, transparent 65%);
+  }
+  .hero-evening::before {
+    background: radial-gradient(ellipse at 92% 50%, rgba(236, 72, 153, 0.18) 0%, transparent 60%);
+  }
+
+  @keyframes hero-glow-breathe {
+    0%, 100% { opacity: 0.5; transform: scale(1)    translate(0%,  0%); }
+    50%       { opacity: 1;   transform: scale(1.06) translate(1%, -1%); }
+  }
+
+  /* Hero text sits above the glow layer */
+  .hero-tod > * { position: relative; z-index: 1; }
+
+  /* Markets scrolling ticker */
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .markets-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    animation: ticker-scroll 40s linear infinite;
+    will-change: transform;
+  }
+
+  .markets-ticker-track:hover {
+    animation-play-state: paused;
+  }
+
+
+  /* Home page pulse animation */
+  @keyframes home-pulse {
+    0%, 100% { opacity: 0.45; }
+    50%       { opacity: 0.85; }
+  }
+
   /* Spinner */
   .spinner {
     width: 32px;

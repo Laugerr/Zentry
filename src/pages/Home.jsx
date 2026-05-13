@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Newspaper, Radio, Trophy, BookOpen, DollarSign,
+  Newspaper, Radio, Trophy, BookOpen,
   ArrowRight, ExternalLink, Flame, MapPin, TrendingUp, TrendingDown,
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
@@ -135,57 +135,230 @@ function HeroWeather() {
 
 // ─── Headlines ────────────────────────────────────────────────────────────────
 const fetchHeadlines = async ({ signal }) => {
-  const url = 'https://feeds.bbci.co.uk/news/world/rss.xml'
+  const feedUrl  = 'https://feeds.bbci.co.uk/news/world/rss.xml'
+  const MEDIA_NS = 'http://search.yahoo.com/mrss/'
+
+  const extractImage = (item) => {
+    const thumb = item.getElementsByTagNameNS(MEDIA_NS, 'thumbnail')[0]
+    if (thumb) return thumb.getAttribute('url')
+    const content = item.getElementsByTagNameNS(MEDIA_NS, 'content')[0]
+    if (content?.getAttribute('type')?.startsWith('image')) return content.getAttribute('url')
+    const enc = item.querySelector('enclosure')
+    if (enc?.getAttribute('type')?.startsWith('image')) return enc.getAttribute('url')
+    return null
+  }
+
   try {
-    const res = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, { signal, cache: 'no-store' })
+    const res = await fetch(
+      `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(feedUrl)}`,
+      { signal, cache: 'no-store' }
+    )
     if (res.ok) {
       const text = await res.text()
       if (text.includes('<item>')) {
-        const doc = new DOMParser().parseFromString(text, 'text/xml')
-        return Array.from(doc.querySelectorAll('item')).slice(0, 6).map((it) => ({
+        const doc    = new DOMParser().parseFromString(text, 'text/xml')
+        const parsed = Array.from(doc.querySelectorAll('item')).slice(0, 10).map((it) => ({
           title:   it.querySelector('title')?.textContent?.trim() ?? '',
           link:    it.querySelector('link')?.textContent?.trim() ?? '',
           pubDate: it.querySelector('pubDate')?.textContent?.trim() ?? '',
+          image:   extractImage(it),
         })).filter((a) => a.title && a.link)
+        if (parsed.length) return parsed
       }
     }
   } catch { /* fall through */ }
-  const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&count=6`, { signal })
+
+  const r = await fetch(
+    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=10`,
+    { signal }
+  )
   const j = await r.json()
   if (j.status !== 'ok') throw new Error('rss')
-  return j.items.slice(0, 6).map((it) => ({ title: it.title, link: it.link, pubDate: it.pubDate }))
+  return j.items.slice(0, 10).map((it) => ({
+    title: it.title, link: it.link, pubDate: it.pubDate,
+    image: it.thumbnail || it.enclosure?.link || null,
+  }))
 }
+
+// Per-article accent palette — used for card background + colour identity
+const CARD_ACCENTS = [
+  { bg: 'linear-gradient(145deg, #110d2e 0%, #1a1240 100%)', color: '#a78bfa' },
+  { bg: 'linear-gradient(145deg, #0c1929 0%, #0f2238 100%)', color: '#60a5fa' },
+  { bg: 'linear-gradient(145deg, #1f0a1a 0%, #2d1028 100%)', color: '#f472b6' },
+  { bg: 'linear-gradient(145deg, #091a14 0%, #0e2a1e 100%)', color: '#34d399' },
+  { bg: 'linear-gradient(145deg, #1c1206 0%, #281c0a 100%)', color: '#fbbf24' },
+  { bg: 'linear-gradient(145deg, #1a0c0c 0%, #280f0f 100%)', color: '#f87171' },
+  { bg: 'linear-gradient(145deg, #0f1a1a 0%, #142626 100%)', color: '#2dd4bf' },
+  { bg: 'linear-gradient(145deg, #1a1208 0%, #231a0d 100%)', color: '#fb923c' },
+  { bg: 'linear-gradient(145deg, #121230 0%, #1a1a40 100%)', color: '#818cf8' },
+  { bg: 'linear-gradient(145deg, #0f1f10 0%, #152a16 100%)', color: '#4ade80' },
+]
 
 function HeadlinesPanel() {
   const { data: items, error, loading } = useCachedFetch('home:headlines', fetchHeadlines, { ttl: 10 * 60_000 })
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [progress, setProgress]   = useState(0)
+  const trackRef   = useRef(null)
+  const animRef    = useRef(false)  // prevent overlapping slides
+
+  const ANIM_MS = 440
+
+  // Slide the image strip, then snap items + reset position invisibly
+  const slide = (dir) => {
+    if (animRef.current || !trackRef.current || !items?.length) return
+    animRef.current = true
+    const target = dir > 0 ? '-66.6667%' : '0%'
+    trackRef.current.style.transition = `transform ${ANIM_MS}ms cubic-bezier(0.25,0.46,0.45,0.94)`
+    trackRef.current.style.transform  = `translateX(${target})`
+    setTimeout(() => {
+      setActiveIdx((i) => (i + dir + items.length) % items.length)
+      // Snap back to centre without animation
+      if (trackRef.current) {
+        trackRef.current.style.transition = 'none'
+        trackRef.current.style.transform  = 'translateX(-33.3333%)'
+      }
+      animRef.current = false
+    }, ANIM_MS + 10)
+  }
+
+  // Auto-advance timer — resets whenever activeIdx changes
+  useEffect(() => {
+    if (!items?.length) return
+    setProgress(0)
+    const start    = Date.now()
+    const DURATION = 5000
+    const id = setInterval(() => {
+      const elapsed = Date.now() - start
+      setProgress(Math.min(elapsed / DURATION, 1))
+      if (elapsed >= DURATION) { clearInterval(id); slide(1) }
+    }, 50)
+    return () => clearInterval(id)
+  }, [items, activeIdx])
+
+  if (loading && !items) return <section style={{ ...panelStyle, padding: 0, height: 440, animation: 'home-pulse 1.4s ease-in-out infinite' }} />
+  if ((error && !items) || !items?.length) return null
+
+  const len     = items.length
+  const active  = items[activeIdx]
+  const prevIdx = (activeIdx - 1 + len) % len
+  const nextIdx = (activeIdx + 1) % len
+  const accent  = CARD_ACCENTS[activeIdx % CARD_ACCENTS.length]
+
+  // The track always shows [prev, current, next] — centred at -33.33%
+  const trackItems = [items[prevIdx], items[activeIdx], items[nextIdx]]
+
   return (
-    <section style={{ ...panelStyle, display: 'flex', flexDirection: 'column' }}>
-      <SectionHead icon={Newspaper} accent="#a78bfa" label="Top Headlines" to="/news" action="More news" />
-      {loading && !items && <div style={{ display: 'grid', gap: 10 }}>{[0,1,2,3,4,5].map((i) => <Skeleton key={i} h={16} />)}</div>}
-      {error && !items && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Couldn&apos;t load headlines.</div>}
-      {items && (
-        <ul style={{ listStyle: 'none', display: 'grid', gap: '0.55rem' }}>
-          {items.map((it, i) => (
-            <li key={it.link + i} style={{ display: 'flex', gap: '0.55rem', alignItems: 'baseline', paddingBottom: i === items.length - 1 ? 0 : '0.55rem', borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--border)' }}>
-              <span style={{ color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6rem', width: 18, flexShrink: 0, paddingTop: 2 }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <a href={it.link} target="_blank" rel="noopener noreferrer" style={{
-                color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.83rem', lineHeight: 1.4,
-                display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0, flex: 1,
-              }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.title}</span>
-                <ExternalLink size={10} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-              </a>
-              {it.pubDate && (
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  {timeAgo(it.pubDate)}
-                </span>
-              )}
-            </li>
+    <section style={{ ...panelStyle, padding: 0, overflow: 'hidden' }}>
+
+      {/* Header */}
+      <div style={{ padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+          <Newspaper size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Top Headlines</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6rem', color: 'var(--text-muted)' }}>{activeIdx + 1} / {len}</span>
+        </div>
+        <Link to="/news" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+          More news <ArrowRight size={10} />
+        </Link>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 2, background: 'var(--border)' }}>
+        <div style={{ height: '100%', width: `${progress * 100}%`, background: `linear-gradient(90deg, ${accent.color}, var(--accent-pink))`, transition: 'width 0.05s linear' }} />
+      </div>
+
+      {/* Image area */}
+      <div style={{ position: 'relative', overflow: 'hidden', height: 280 }}>
+
+        {/* Film strip — 3 images wide, slides as one unit */}
+        <div
+          ref={trackRef}
+          style={{
+            display: 'flex', width: '300%', height: '100%',
+            transform: 'translateX(-33.3333%)',
+            willChange: 'transform',
+          }}
+        >
+          {trackItems.map((it, i) => (
+            <div
+              key={i}
+              style={{
+                width: '33.3333%', height: '100%', flexShrink: 0,
+                background: it.image
+                  ? `url(${it.image}) center/cover no-repeat`
+                  : CARD_ACCENTS[(prevIdx + i) % CARD_ACCENTS.length].bg,
+              }}
+            />
           ))}
-        </ul>
-      )}
+        </div>
+
+        {/* ── Fixed overlay — never moves ── */}
+        {/* Scrim */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.18) 55%, transparent 100%)'
+        }} />
+        {/* Text — fades in on change, click opens article */}
+        <a
+          key={activeIdx}
+          href={active.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hl-text-fade"
+          style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            padding: '1rem 1.1rem', textDecoration: 'none',
+          }}
+        >
+          {active.pubDate && (
+            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.5)', fontFamily: "'JetBrains Mono', monospace", marginBottom: 5, letterSpacing: '0.06em' }}>
+              {timeAgo(active.pubDate)}
+            </div>
+          )}
+          <div style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.1rem)', fontWeight: 700, color: '#fff', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {active.title}
+          </div>
+        </a>
+      </div>
+
+      {/* 5 square thumbnails — static, only highlight changes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem', padding: '0.5rem 0.6rem' }}>
+        {[
+          (activeIdx - 2 + len) % len,
+          prevIdx,
+          activeIdx,
+          nextIdx,
+          (activeIdx + 2) % len,
+        ].map((idx, i) => {
+          const it     = items[idx]
+          const isCurr = i === 2
+          const ac     = CARD_ACCENTS[idx % CARD_ACCENTS.length]
+          const offset = i - 2  // -2, -1, 0, +1, +2
+          return (
+            <button
+              key={idx}
+              onClick={() => {
+                if (offset !== 0) slide(offset)
+                else window.open(it.link, '_blank', 'noopener')
+              }}
+              title={it.title}
+              style={{
+                aspectRatio: '1 / 1',
+                borderRadius: 6, overflow: 'hidden', position: 'relative',
+                padding: 0, cursor: 'pointer', outline: 'none',
+                background: it.image ? `url(${it.image}) center/cover no-repeat` : ac.bg,
+                border: isCurr ? `2px solid ${accent.color}` : '2px solid rgba(255,255,255,0.08)',
+                opacity: isCurr ? 1 : Math.abs(offset) === 1 ? 0.55 : 0.3,
+                transition: 'opacity 0.3s ease, border-color 0.3s ease',
+              }}
+            >
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 55%)' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.25rem 0.3rem', fontSize: '0.52rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {it.title}
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }
@@ -269,48 +442,77 @@ function FootballPanel() {
 
 // ─── Markets ticker ───────────────────────────────────────────────────────────
 const fetchFinance = async ({ signal }) => {
-  const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true', { signal })
+  const r = await fetch(
+    'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false',
+    { signal }
+  )
   if (!r.ok) throw new Error('coingecko')
-  return r.json()
+  return r.json() // array of { id, symbol, name, current_price, price_change_percentage_24h }
 }
 
 function MarketsStrip() {
-  const { data, error, loading } = useCachedFetch('home:finance', fetchFinance, { ttl: 2 * 60_000 })
-  const rows = [
-    { key: 'bitcoin',  label: 'BTC', color: '#f7931a' },
-    { key: 'ethereum', label: 'ETH', color: '#627eea' },
-    { key: 'solana',   label: 'SOL', color: '#14f195' },
-  ]
+  const { data, error, loading } = useCachedFetch('home:markets', fetchFinance, { ttl: 2 * 60_000 })
+
+  // Loading state — pulse bar at same height as the real ticker
+  if (loading && !data) {
+    return (
+      <div style={{ ...panelStyle, padding: 0, height: 44, animation: 'home-pulse 1.4s ease-in-out infinite', borderRadius: 12 }} />
+    )
+  }
+  if ((error && !data) || !data?.length) return null
+
+  // Duplicate the list so the second copy seamlessly replaces the first
+  const items = [...data, ...data]
+
   return (
-    <section style={{ ...panelStyle, padding: '0.7rem 1.1rem', display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>
-        <DollarSign size={12} style={{ color: '#fb923c' }} /> Markets
-      </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', flex: 1, flexWrap: 'wrap' }}>
-        {loading && !data && rows.map((r) => <Skeleton key={r.key} h={14} w={110} />)}
-        {error && !data && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Couldn&apos;t load prices.</span>}
-        {data && rows.map(({ key, label, color }) => {
-          const price = data[key]?.usd
-          const ch = data[key]?.usd_24h_change ?? 0
+    <section style={{ ...panelStyle, padding: 0, display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative', height: 44 }}>
+
+      {/* Fixed "MARKETS" pill on the left */}
+      <div style={{
+        flexShrink: 0, zIndex: 2, height: '100%',
+        display: 'flex', alignItems: 'center',
+        padding: '0 1rem',
+        borderRight: '1px solid var(--border)',
+        background: 'var(--bg-card)',
+      }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          MARKETS
+        </span>
+      </div>
+
+      {/* Scrolling track */}
+      <div className="markets-ticker-track">
+        {items.map((coin, idx) => {
+          const ch = coin.price_change_percentage_24h ?? 0
           const up = ch >= 0
-          if (price == null) return null
+          const price = coin.current_price
           return (
-            <span key={key} style={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.45rem' }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 700, color, letterSpacing: '0.05em' }}>{label}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                ${price.toLocaleString(undefined, { maximumFractionDigits: price > 100 ? 0 : 2 })}
+            <span
+              key={coin.id + idx}
+              style={{
+                display: 'inline-flex', alignItems: 'baseline', gap: '0.4rem',
+                padding: '0 1.25rem',
+                borderRight: '1px solid var(--border)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
+                {coin.symbol.toUpperCase()}
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.68rem', fontFamily: "'JetBrains Mono', monospace", color: up ? '#4ade80' : '#f87171' }}>
-                {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                ${price.toLocaleString(undefined, { maximumFractionDigits: price >= 100 ? 0 : price >= 1 ? 2 : 4 })}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace", color: up ? '#4ade80' : '#f87171' }}>
+                {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
                 {up ? '+' : ''}{ch.toFixed(2)}%
               </span>
             </span>
           )
         })}
       </div>
-      <Link to="/finance" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
-        Watchlist <ArrowRight size={10} />
-      </Link>
+
+      {/* Right-edge fade */}
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: 'linear-gradient(to left, var(--bg-card), transparent)', pointerEvents: 'none', zIndex: 2 }} />
     </section>
   )
 }
@@ -415,6 +617,81 @@ function LanguagePanel() {
   )
 }
 
+// ─── Typewriter ───────────────────────────────────────────────────────────────
+const PHRASES_NIGHT = [
+  "get some rest",
+  "still up?",
+  "burning the midnight oil",
+  "the world can wait",
+  "quiet hours",
+]
+const PHRASES_MORNING = [
+  "here's your day",
+  "let's get to work",
+  "what's on the agenda",
+  "here's your briefing",
+  "make it count",
+  "fresh start",
+]
+const PHRASES_AFTERNOON = [
+  "how's it going?",
+  "afternoon check-in",
+  "keep the momentum",
+  "here's the rundown",
+  "staying on track?",
+  "halfway through",
+]
+const PHRASES_EVENING = [
+  "winding down?",
+  "here's the recap",
+  "end of day summary",
+  "how'd it go?",
+  "time to recharge",
+  "almost done",
+]
+
+const getPhrases = (h) =>
+  h < 5  ? PHRASES_NIGHT     :
+  h < 12 ? PHRASES_MORNING   :
+  h < 18 ? PHRASES_AFTERNOON :
+           PHRASES_EVENING
+
+const getPeriod = (h) =>
+  h < 5  ? 'night'     :
+  h < 12 ? 'morning'   :
+  h < 18 ? 'afternoon' :
+           'evening'
+
+function useTypewriter(phrases, typeSpeed = 75, deleteSpeed = 35, pauseMs = 1800) {
+  const [text, setText]         = useState(phrases[0])
+  const [phraseIdx, setPhraseIdx] = useState(0)
+  const [deleting, setDeleting] = useState(false)
+  const [paused, setPaused]     = useState(false)
+
+  useEffect(() => {
+    const current = phrases[phraseIdx]
+
+    if (paused) {
+      const t = setTimeout(() => { setPaused(false); setDeleting(true) }, pauseMs)
+      return () => clearTimeout(t)
+    }
+    if (deleting) {
+      if (text.length === 0) {
+        setDeleting(false)
+        setPhraseIdx((i) => (i + 1) % phrases.length)
+        return
+      }
+      const t = setTimeout(() => setText((s) => s.slice(0, -1)), deleteSpeed)
+      return () => clearTimeout(t)
+    }
+    if (text === current) { setPaused(true); return }
+    const t = setTimeout(() => setText(current.slice(0, text.length + 1)), typeSpeed)
+    return () => clearTimeout(t)
+  }, [text, deleting, paused, phraseIdx, phrases, typeSpeed, deleteSpeed, pauseMs])
+
+  return text
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [now, setNow] = useState(() => new Date())
@@ -423,26 +700,33 @@ export default function Home() {
     return () => clearInterval(id)
   }, [])
 
-  const hello = greet(now.getHours())
+  const h         = now.getHours()
+  const hello     = greet(h)
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
   const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const typed     = useTypewriter(getPhrases(h))
+  const period    = getPeriod(h)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Hero — greeting + weather inline */}
-      <div style={{
-        ...panelStyle,
-        padding: '1.4rem 1.5rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: '1.5rem', flexWrap: 'wrap',
-        background: 'linear-gradient(135deg, var(--bg-card), var(--bg-card-hover))',
-      }}>
+      <div
+        className={`hero-tod hero-${period}`}
+        style={{
+          ...panelStyle,
+          position: 'relative', overflow: 'hidden',
+          padding: '1.4rem 1.5rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '1.5rem', flexWrap: 'wrap',
+          background: 'linear-gradient(135deg, var(--bg-card), var(--bg-card-hover))',
+        }}
+      >
         <div style={{ minWidth: 0, flex: '1 1 320px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             <Sparkles size={11} /> {dateLabel} · {timeLabel}
           </div>
           <h1 style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1.15, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', margin: 0 }}>
-            {hello}, <span className="gradient-text">here&apos;s your day</span>
+            {hello}, <span className="gradient-text">{typed}</span>
           </h1>
         </div>
         <HeroWeather />
@@ -451,30 +735,36 @@ export default function Home() {
       {/* Markets ticker — full width */}
       <MarketsStrip />
 
-      {/* Featured row — Headlines + Football */}
-      <div className="home-feature-grid">
+      {/* Main area — Headlines 50% | Football+Radio 25% | Language 25% */}
+      <div className="home-main-grid">
         <HeadlinesPanel />
-        <FootballPanel />
-      </div>
-
-      {/* Bottom row — Radio + Language */}
-      <div className="home-bottom-grid">
-        <RadioPanel />
-        <LanguagePanel />
+        <div className="home-right-col">
+          <FootballPanel />
+          <RadioPanel />
+        </div>
+        <div className="home-right-col">
+          <LanguagePanel />
+        </div>
       </div>
 
       <style>{`
         @keyframes home-pulse { 0%,100% { opacity: 0.45 } 50% { opacity: 0.85 } }
-        .home-feature-grid {
+
+        /* Overlay text fades in on article change */
+        @keyframes hl-text-fade { from { opacity: 0; } to { opacity: 1; } }
+        .hl-text-fade { animation: hl-text-fade 0.35s ease; }
+
+        /* Layout */
+        .home-main-grid {
           display: grid; gap: 1rem;
-          grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
         }
-        .home-bottom-grid {
-          display: grid; gap: 1rem;
-          grid-template-columns: 1fr 1fr;
+        .home-right-col { display: flex; flex-direction: column; gap: 1rem; }
+        @media (max-width: 1024px) {
+          .home-main-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
         }
-        @media (max-width: 860px) {
-          .home-feature-grid, .home-bottom-grid { grid-template-columns: 1fr; }
+        @media (max-width: 640px) {
+          .home-main-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
