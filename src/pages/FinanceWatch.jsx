@@ -275,7 +275,7 @@ function FxTab({ base, setBase }) {
   )
 }
 
-function FxRow({ base, currency, rate, watched, onWatch }) {
+function FxRow({ currency, rate, watched, onWatch }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',

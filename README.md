@@ -5,7 +5,7 @@
 ### Personal Life Dashboard
 
 <p>
-  <a href="https://zentry-ecru.vercel.app"><img src="https://img.shields.io/badge/🌐_Live_Demo-zentry--ecru.vercel.app-a78bfa?style=for-the-badge&labelColor=0a0a0f" /></a>
+  <a href="https://zentry-dash.vercel.app"><img src="https://img.shields.io/badge/🌐_Live_Demo-zentry--dash.vercel.app-a78bfa?style=for-the-badge&labelColor=0a0a0f" /></a>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
   <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" />
   <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white" />
@@ -21,7 +21,7 @@
 **A dark, minimal dashboard with six tools — all free, all in one place.**
 
 <p>
-  <a href="https://zentry-ecru.vercel.app">
+  <a href="https://zentry-dash.vercel.app">
     <img src="https://img.shields.io/badge/🚀%20Try%20it%20Live-Zentry-8b5cf6?style=for-the-badge&labelColor=1a1a2e" height="40" />
   </a>
 </p>

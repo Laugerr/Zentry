@@ -675,7 +675,6 @@ export default function FootballToday() {
     setMatchData(newData); setErrors(newErr); setLastFetch(new Date()); setLoading(false)
   }, [date])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMatches() }, [loadMatches])
   useEffect(() => {
     if (!sameDay(date, new Date())) return // only auto-refresh for today

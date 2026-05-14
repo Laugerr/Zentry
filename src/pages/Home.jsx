@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Newspaper, Radio, Trophy, BookOpen,
+  Newspaper, Radio, Trophy, BookOpen, Briefcase, FileText, DollarSign,
   ArrowRight, ExternalLink, Flame, MapPin, TrendingUp, TrendingDown,
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
@@ -204,7 +204,7 @@ function HeadlinesPanel() {
   const ANIM_MS = 440
 
   // Slide the image strip, then snap items + reset position invisibly
-  const slide = (dir) => {
+  const slide = useCallback((dir) => {
     if (animRef.current || !trackRef.current || !items?.length) return
     animRef.current = true
     const target = dir > 0 ? '-66.6667%' : '0%'
@@ -219,7 +219,7 @@ function HeadlinesPanel() {
       }
       animRef.current = false
     }, ANIM_MS + 10)
-  }
+  }, [items])
 
   // Auto-advance timer — resets whenever activeIdx changes
   useEffect(() => {
@@ -233,7 +233,7 @@ function HeadlinesPanel() {
       if (elapsed >= DURATION) { clearInterval(id); slide(1) }
     }, 50)
     return () => clearInterval(id)
-  }, [items, activeIdx])
+  }, [items, activeIdx, slide])
 
   if (loading && !items) return <section style={{ ...panelStyle, padding: 0, height: 440, animation: 'home-pulse 1.4s ease-in-out infinite' }} />
   if ((error && !items) || !items?.length) return null
@@ -618,6 +618,35 @@ function LanguagePanel() {
 }
 
 // ─── Typewriter ───────────────────────────────────────────────────────────────
+function QuickActionsPanel() {
+  const tools = [
+    { to: '/news', icon: Newspaper, label: 'News', accent: '#a78bfa' },
+    { to: '/jobs', icon: Briefcase, label: 'Jobs', accent: '#60a5fa' },
+    { to: '/cv', icon: FileText, label: 'CV', accent: '#f472b6' },
+    { to: '/finance', icon: DollarSign, label: 'Markets', accent: '#34d399' },
+  ]
+
+  return (
+    <section style={panelStyle}>
+      <SectionHead icon={Sparkles} accent="#818cf8" label="Quick Start" />
+      <div className="home-action-grid">
+        {tools.map(({ to, icon: Icon, label, accent }) => (
+          <Link
+            key={to}
+            to={to}
+            className="home-action-tile"
+            style={{ '--tile-accent': accent, textDecoration: 'none' }}
+          >
+            <span className="home-action-icon"><Icon size={15} strokeWidth={1.8} /></span>
+            <span>{label}</span>
+            <ArrowRight size={12} className="home-action-arrow" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 const PHRASES_NIGHT = [
   "get some rest",
   "still up?",
@@ -708,7 +737,7 @@ export default function Home() {
   const period    = getPeriod(h)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="home-shell">
       {/* Hero — greeting + weather inline */}
       <div
         className={`hero-tod hero-${period}`}
@@ -725,25 +754,31 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             <Sparkles size={11} /> {dateLabel} · {timeLabel}
           </div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1.15, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-0.02em', margin: 0 }}>
-            {hello}, <span className="gradient-text">{typed}</span>
+          <h1 style={{ fontSize: 'clamp(1.8rem, 3.4vw, 2.7rem)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0, margin: 0 }}>
+            {hello}
           </h1>
+          <div style={{ minHeight: '1.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.95rem, 1.4vw, 1.12rem)', fontWeight: 700 }}>
+            <span className="gradient-text">{typed}</span>
+            <span style={{ width: 8, height: '1.05em', borderRadius: 2, background: 'var(--accent-purple)', animation: 'home-pulse 1.1s ease-in-out infinite' }} />
+          </div>
         </div>
         <HeroWeather />
       </div>
 
       {/* Markets ticker — full width */}
+      <div className="home-today-stack">
+        <FootballPanel />
+        <LanguagePanel />
+      </div>
+
       <MarketsStrip />
 
       {/* Main area — Headlines 50% | Football+Radio 25% | Language 25% */}
       <div className="home-main-grid">
         <HeadlinesPanel />
         <div className="home-right-col">
-          <FootballPanel />
+          <QuickActionsPanel />
           <RadioPanel />
-        </div>
-        <div className="home-right-col">
-          <LanguagePanel />
         </div>
       </div>
 
@@ -754,17 +789,74 @@ export default function Home() {
         @keyframes hl-text-fade { from { opacity: 0; } to { opacity: 1; } }
         .hl-text-fade { animation: hl-text-fade 0.35s ease; }
 
-        /* Layout */
+        .home-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          max-width: 1240px;
+          min-width: 0;
+          overflow-x: hidden;
+        }
+
+        .home-today-stack {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
+        .home-shell section {
+          min-width: 0;
+          max-width: 100%;
+        }
+
         .home-main-grid {
           display: grid; gap: 1rem;
-          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
         }
         .home-right-col { display: flex; flex-direction: column; gap: 1rem; }
+        .home-action-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.55rem;
+        }
+        .home-action-tile {
+          min-height: 54px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.65rem 0.7rem;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          background: rgba(255,255,255,0.025);
+          color: var(--text-secondary);
+          font-size: 0.78rem;
+          font-weight: 700;
+          transition: border-color 0.15s, background 0.15s, color 0.15s;
+        }
+        .home-action-tile:hover {
+          border-color: var(--border-accent);
+          background: rgba(139,92,246,0.08);
+          color: var(--text-primary);
+        }
+        .home-action-icon {
+          width: 28px;
+          height: 28px;
+          border-radius: 7px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--tile-accent);
+          background: rgba(255,255,255,0.04);
+        }
+        .home-action-arrow { color: var(--text-muted); }
         @media (max-width: 1024px) {
-          .home-main-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+          .home-main-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
+          .home-today-stack { grid-template-columns: 1fr; }
           .home-main-grid { grid-template-columns: 1fr; }
+          .home-today-stack section { padding: 0.95rem 1rem !important; }
         }
       `}</style>
     </div>

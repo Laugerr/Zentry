@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zentry-ecru.vercel.app/sitemap.xml
+Sitemap: https://zentry-dash.vercel.app/sitemap.xml
