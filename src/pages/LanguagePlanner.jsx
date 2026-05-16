@@ -511,37 +511,67 @@ function stripHtml(html = '') {
     .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').trim()
 }
 
+const LANG_NAMES = { en:'English', fr:'French', de:'German', es:'Spanish', it:'Italian', pt:'Portuguese', ja:'Japanese', zh:'Chinese', ru:'Russian', ar:'Arabic', ko:'Korean', nl:'Dutch', pl:'Polish', sv:'Swedish' }
+const DICT_LANG_KEY = 'zentry:srs:dictlang'
+
 function DictionaryPopup({ word, onClose }) {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+  const [fullJson, setFullJson] = useState(null)
+  const [lang,     setLang]     = useState(() => localStorage.getItem(DICT_LANG_KEY) ?? 'en')
+  const [langs,    setLangs]    = useState([])
+  const [data,     setData]     = useState(null)
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(null)
 
   useEffect(() => {
     const ctrl = new AbortController()
-    setLoading(true); setError(null); setData(null)
+    setLoading(true); setError(null); setData(null); setFullJson(null); setLangs([])
     fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.toLowerCase())}`, { signal: ctrl.signal })
       .then(r => { if (!r.ok) throw new Error('not found'); return r.json() })
       .then(json => {
-        const sections = json.en ?? json[Object.keys(json)[0]] ?? []
-        setData(sections.slice(0, 5))
+        const available = Object.keys(json).filter(k => Array.isArray(json[k]) && json[k].length)
+        setFullJson(json); setLangs(available)
+        const preferred = available.includes(lang) ? lang : (available[0] ?? 'en')
+        setLang(preferred)
+        setData((json[preferred] ?? []).slice(0, 6))
       })
       .catch(e => { if (e.name !== 'AbortError') setError('No definition found for "' + word + '"') })
       .finally(() => setLoading(false))
     return () => ctrl.abort()
   }, [word])
 
+  function switchLang(l) {
+    setLang(l); localStorage.setItem(DICT_LANG_KEY, l)
+    if (fullJson) setData((fullJson[l] ?? []).slice(0, 6))
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ ...panel, width: '100%', maxWidth: 500, maxHeight: '75vh', display: 'flex', flexDirection: 'column', gap: 0, overflow: 'hidden' }}>
+      <div style={{ ...panel, width: '100%', maxWidth: 520, maxHeight: '78vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.1rem 0 0.85rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem' }}>
           <div>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)' }}>{word}</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 8 }}>via Wiktionary</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 8 }}>Wiktionary</span>
           </div>
           <button onClick={onClose} style={{ ...btnGhost, padding: '0.3rem 0.5rem' }}><X size={14} /></button>
         </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+
+        {/* Language tabs */}
+        {langs.length > 1 && (
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: '0.65rem', marginBottom: '0.1rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            {langs.map(l => (
+              <button key={l} onClick={() => switchLang(l)} style={{
+                padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s',
+                background: lang === l ? '#a78bfa' : 'var(--input-bg)',
+                color: lang === l ? '#fff' : 'var(--text-muted)',
+              }}>
+                {LANG_NAMES[l] ?? l}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ overflowY: 'auto', flex: 1, paddingTop: '0.5rem' }}>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1.5rem 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
               <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: '#a78bfa', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
@@ -550,13 +580,13 @@ function DictionaryPopup({ word, onClose }) {
           )}
           {error && <div style={{ padding: '1rem 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</div>}
           {data && data.map((section, si) => (
-            <div key={si} style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.5rem' }}>
+            <div key={si} style={{ marginBottom: '1.1rem' }}>
+              <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.45rem' }}>
                 {section.partOfSpeech}
               </div>
               <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {section.definitions.slice(0, 4).map((def, di) => (
-                  <li key={di} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <li key={di} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                     {stripHtml(def.definition)}
                     {def.examples?.[0] && (
                       <div style={{ marginTop: 3, fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', paddingLeft: '0.5rem', borderLeft: '2px solid var(--border)' }}>
@@ -593,7 +623,8 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
   const [pomodoro,     setPomodoro]    = useState({ phase: 'work', left: WORK_SECS, running: false })
   const [selectedWord, setSelectedWord]= useState('')
   const [dictWord,     setDictWord]    = useState(null)
-  const cardRef = useRef()
+  const cardRef         = useRef()
+  const selectedWordRef = useRef('')
 
   // Pomodoro tick
   useEffect(() => {
@@ -619,10 +650,10 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       if (text && text.length >= 2 && text.split(/\s+/).length <= 4) {
         const range = sel.getRangeAt(0)
         if (cardRef.current?.contains(range.commonAncestorContainer)) {
-          setSelectedWord(text); return
+          selectedWordRef.current = text; setSelectedWord(text); return
         }
       }
-      setSelectedWord('')
+      selectedWordRef.current = ''; setSelectedWord('')
     }
     document.addEventListener('mouseup', onMouseUp)
     return () => document.removeEventListener('mouseup', onMouseUp)
@@ -651,6 +682,9 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       const card = currentCard(); if (!card) return
       if (e.code === 'Space') { e.preventDefault(); if (flipPhase === 'front') reveal() }
       if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doUndo() }
+      if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); suspendCard(); return }
+      if (e.key === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); buryCard(); return }
+      if (e.key === 'd' && !e.ctrlKey && !e.metaKey && !e.altKey && selectedWordRef.current) { e.preventDefault(); setDictWord(selectedWordRef.current); selectedWordRef.current = ''; setSelectedWord(''); return }
       if (flipPhase !== 'back') return
       if (e.key === '1') rate(card, 0)
       if (e.key === '2') rate(card, 1)
@@ -671,6 +705,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
     if (undoStack.current.length > 20) undoStack.current.shift()
 
     const updated = rateCard(card, rating)
+    updated.history = [...(card.history ?? []).slice(-49), { ts: Date.now(), rating, interval: updated.interval ?? 0, ease: +(updated.ease ?? DEFAULT_EASE).toFixed(2) }]
     onUpdateCard(updated)
     const key = ['again','hard','good','easy'][rating]
     setStats(s => ({ ...s, [key]: s[key] + 1 }))
@@ -891,11 +926,10 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       )}
 
       {flipPhase === 'front' && (
-        <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-          <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>Space</kbd> reveal &nbsp;·&nbsp;
-          <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>1</kbd>–
-          <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>4</kbd> rate &nbsp;·&nbsp;
-          <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>Ctrl+Z</kbd> undo
+        <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 2 }}>
+          {[['Space','reveal'],['1–4','rate'],['S','suspend'],['B','bury'],['D','dict'],['Ctrl+Z','undo']].map(([k,v],i,a) => (
+            <span key={k}><kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4, fontSize: '0.62rem' }}>{k}</kbd> {v}{i < a.length-1 ? <span style={{ opacity: 0.35 }}> · </span> : null}</span>
+          ))}
         </div>
       )}
 
@@ -944,14 +978,115 @@ function EaseBadge({ ease }) {
   )
 }
 
+// ─── Card stats drawer ────────────────────────────────────────────────────────
+function CardStatsDrawer({ card, onClose }) {
+  const history = card.history ?? []
+  const RCOLORS = ['#f87171','#fbbf24','#60a5fa','#4ade80']
+  const RLABELS = ['Again','Hard','Good','Easy']
+  const maxInterval = Math.max(...history.map(h => h.interval), 1)
+
+  const due = card.due ? new Date(card.due) : null
+  const dueStr = due
+    ? (card.state === 'review' ? due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : `in ${Math.max(1, Math.ceil((card.due - Date.now()) / 60_000))} min`)
+    : '—'
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ ...panel, width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.front}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.back}</div>
+          </div>
+          <button onClick={onClose} style={{ ...btnGhost, padding: '0.3rem 0.5rem', flexShrink: 0 }}><X size={14} /></button>
+        </div>
+
+        {/* Stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
+          {[
+            { label: 'State',    value: card.state ?? 'new',             color: card.state === 'review' ? '#4ade80' : card.state === 'learning' || card.state === 'relearn' ? '#f87171' : '#60a5fa' },
+            { label: 'Interval', value: card.interval > 0 ? `${card.interval}d` : '—', color: 'var(--text-primary)' },
+            { label: 'Next due', value: dueStr,                          color: '#a78bfa' },
+            { label: 'Reviews',  value: card.reps ?? 0,                  color: '#4ade80' },
+            { label: 'Lapses',   value: card.lapses ?? 0,                color: (card.lapses ?? 0) > 0 ? '#f87171' : 'var(--text-muted)' },
+            { label: 'Ease',     value: (card.ease ?? DEFAULT_EASE).toFixed(2), color: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171' },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: 'var(--input-bg)', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1rem', color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Ease bar */}
+        <div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: "'JetBrains Mono', monospace" }}>Ease factor</div>
+          <div style={{ height: 6, borderRadius: 99, background: 'var(--border)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(100, ((card.ease ?? DEFAULT_EASE) / 4) * 100)}%`, background: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171', transition: 'width 0.4s ease' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: 3 }}>
+            <span>1.3 (hard)</span><span>2.5 (default)</span><span>4.0 (easy)</span>
+          </div>
+        </div>
+
+        {/* Review history */}
+        {history.length > 0 && (
+          <div>
+            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontFamily: "'JetBrains Mono', monospace" }}>
+              Review history · last {history.length} reviews
+            </div>
+            {/* Rating dots */}
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+              {history.map((h, i) => (
+                <div key={i} title={`${RLABELS[h.rating]} · ${h.interval}d · ${new Date(h.ts).toLocaleDateString()}`} style={{ width: 12, height: 12, borderRadius: '50%', background: RCOLORS[h.rating], flexShrink: 0, cursor: 'default' }} />
+              ))}
+            </div>
+            {/* Interval progression bar chart */}
+            <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 48 }}>
+              {history.map((h, i) => (
+                <div key={i} title={`${h.interval}d`} style={{ flex: 1, minWidth: 4, maxWidth: 20, borderRadius: '3px 3px 0 0', background: RCOLORS[h.rating], height: `${Math.max(4, (h.interval / maxInterval) * 44)}px`, opacity: 0.75, transition: 'height 0.3s ease' }} />
+              ))}
+            </div>
+            <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: 3 }}>Interval (days) per review</div>
+          </div>
+        )}
+        {history.length === 0 && (
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem' }}>No review history yet — study this card to track progress.</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Export deck CSV ──────────────────────────────────────────────────────────
+function exportDeckCSV(deck, deckCards) {
+  const header = ['front','back','tags','state','interval','ease','reps','lapses']
+  const rows = deckCards.map(c => [
+    `"${(c.front ?? '').replace(/"/g,'""')}"`,
+    `"${(c.back  ?? '').replace(/"/g,'""')}"`,
+    `"${(c.tags  ?? '').replace(/"/g,'""')}"`,
+    c.state ?? 'new',
+    c.interval ?? 0,
+    (c.ease ?? DEFAULT_EASE).toFixed(2),
+    c.reps ?? 0,
+    c.lapses ?? 0,
+  ])
+  const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+  const a = document.createElement('a'); a.href = url; a.download = `${deck.name}.csv`; a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ─── Deck editor ──────────────────────────────────────────────────────────────
 function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateDeck }) {
   const deckCards = cards.filter(c => c.deckId === deck.id)
-  const [front, setFront] = useState('')
-  const [back,  setBack]  = useState('')
-  const [tab,   setTab]   = useState('cards')
+  const [front,      setFront]      = useState('')
+  const [back,       setBack]       = useState('')
+  const [tab,        setTab]        = useState('cards')
   const [newPerDay,  setNewPerDay]  = useState(deck.newPerDay  ?? DEFAULT_NEW_PER_DAY)
   const [maxReviews, setMaxReviews] = useState(deck.maxReviews ?? DEFAULT_MAX_REVIEWS)
+  const [statsCard,  setStatsCard]  = useState(null)
 
   function addCard() {
     if (!front.trim() || !back.trim()) return
@@ -965,6 +1100,7 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontWeight: 700, fontSize: '1rem' }}>{deck.name}</span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => exportDeckCSV(deck, deckCards)} title="Export as CSV" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)', fontSize: '0.72rem' }}>↓ CSV</button>
             <button onClick={() => { if (confirm(`Delete "${deck.name}"?`)) onDeleteDeck(deck.id) }} style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}><Trash2 size={13} /></button>
             <button onClick={onClose} style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><X size={14} /></button>
           </div>
@@ -990,7 +1126,7 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
             {deckCards.map(c => {
               const stateColor = c.state === 'review' ? '#4ade80' : c.state === 'learning' || c.state === 'relearn' ? '#f87171' : '#60a5fa'
               return (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.65rem 0.75rem', background: 'var(--input-bg)', borderRadius: 8 }}>
+                <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.65rem 0.75rem', background: 'var(--input-bg)', borderRadius: 8, cursor: 'pointer' }} onClick={() => setStatsCard(c)}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: 2 }}>{c.front}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>{c.back}</div>
@@ -1007,7 +1143,7 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                       ))}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                     {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)' }}><Eye size={11} /></button>}
                     <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null, suspended: false, buried: null } : x))} title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
                     <button onClick={() => onSaveCards(cards.filter(x => x.id !== c.id))} style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}><Trash2 size={11} /></button>
@@ -1026,6 +1162,7 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
           </div>
         )}
       </div>
+      {statsCard && <CardStatsDrawer card={statsCard} onClose={() => setStatsCard(null)} />}
     </div>
   )
 }
