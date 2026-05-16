@@ -145,6 +145,42 @@ function buildForecastData(cards) {
   })
 }
 
+// ─── Deck colors & goal ──────────────────────────────────────────────────────
+const DECK_COLOR_PALETTE = [
+  { gradient: 'linear-gradient(135deg,#667eea,#764ba2)', emoji: '📚', accent: '#a78bfa' },
+  { gradient: 'linear-gradient(135deg,#f093fb,#f5576c)', emoji: '🌸', accent: '#f87171' },
+  { gradient: 'linear-gradient(135deg,#4facfe,#00f2fe)', emoji: '🌊', accent: '#60a5fa' },
+  { gradient: 'linear-gradient(135deg,#43e97b,#38f9d7)', emoji: '🌿', accent: '#4ade80' },
+  { gradient: 'linear-gradient(135deg,#fa709a,#fee140)', emoji: '🔥', accent: '#fbbf24' },
+  { gradient: 'linear-gradient(135deg,#a18cd1,#fbc2eb)', emoji: '✨', accent: '#e879f9' },
+  { gradient: 'linear-gradient(135deg,#f9d423,#f83600)', emoji: '🍊', accent: '#fb923c' },
+  { gradient: 'linear-gradient(135deg,#2af598,#009efd)', emoji: '💎', accent: '#34d399' },
+]
+const GOAL_KEY  = 'zentry:srs:goal'
+const loadGoal  = () => parseInt(localStorage.getItem(GOAL_KEY) ?? '20') || 20
+const saveGoal  = (g) => { try { localStorage.setItem(GOAL_KEY, String(g)) } catch {} }
+function deckColor(deck) { return DECK_COLOR_PALETTE[(deck.colorIdx ?? 0) % DECK_COLOR_PALETTE.length] }
+function getTotalReviewedToday() {
+  const today = todayStr(); let total = 0
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith('zentry:srs:daily:') || !key.endsWith(`:${today}`)) continue
+    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); total += (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch {}
+  }
+  return total
+}
+function buildCalData() {
+  const data = {}
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith('zentry:srs:daily:')) continue
+    const parts = key.split(':'); const date = parts[parts.length - 1]
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue
+    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); data[date] = (data[date] ?? 0) + (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch {}
+  }
+  return data
+}
+
 // ─── IndexedDB — media ────────────────────────────────────────────────────────
 const IDB_NAME = 'zentry-srs-media'; const IDB_STORE = 'files'
 function openMediaDB() {
@@ -342,10 +378,34 @@ function DeckRing({ cards, deckId, size = 72 }) {
   )
 }
 
+// ─── Goal ring ────────────────────────────────────────────────────────────────
+function GoalRing({ done, goal, size = 56 }) {
+  const pct  = Math.min(done / Math.max(goal, 1), 1)
+  const r    = (size - 8) / 2
+  const circ = 2 * Math.PI * r
+  const color = pct >= 1 ? '#4ade80' : '#a78bfa'
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border)" strokeWidth={8} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={8}
+          strokeDasharray={`${pct * circ} ${circ}`} strokeLinecap="round"
+          style={{ transition: 'stroke-dasharray 0.5s ease' }} />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 700, color, lineHeight: 1 }}>{done}</span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Stats tab ────────────────────────────────────────────────────────────────
 function StatsTab({ cards, decks, streak }) {
   const heatmap  = useMemo(() => buildHeatmapData(), [])
   const forecast = useMemo(() => buildForecastData(cards), [cards])
+  const calData  = useMemo(() => buildCalData(), [])
+  const now      = new Date()
+  const [calMonth, setCalMonth] = useState({ year: now.getFullYear(), month: now.getMonth() })
 
   const maxCount   = Math.max(...heatmap.map(d => d.count), 1)
   const maxForecast= Math.max(...forecast.map(d => d.count), 1)
@@ -454,6 +514,54 @@ function StatsTab({ cards, decks, streak }) {
           })}
         </div>
       </div>
+
+      {/* Month calendar */}
+      {(() => {
+        const { year, month } = calMonth
+        const firstDow    = new Date(year, month, 1).getDay()
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+        const cells = []
+        for (let i = 0; i < firstDow; i++) cells.push(null)
+        for (let d = 1; d <= daysInMonth; d++) {
+          const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+          cells.push({ day: d, ds, count: calData[ds] ?? 0 })
+        }
+        const monthName = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        const maxDay    = Math.max(...cells.filter(Boolean).map(c => c.count), 1)
+        const isToday   = (c) => c?.ds === todayStr()
+        return (
+          <div style={panel}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                {monthName}
+              </div>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <button onClick={() => setCalMonth(({ year: y, month: m }) => m === 0 ? { year: y-1, month: 11 } : { year: y, month: m-1 })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>‹</button>
+                <button onClick={() => setCalMonth({ year: now.getFullYear(), month: now.getMonth() })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.65rem' }}>Today</button>
+                <button onClick={() => setCalMonth(({ year: y, month: m }) => m === 11 ? { year: y+1, month: 0 } : { year: y, month: m+1 })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>›</button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 4 }}>
+              {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: '0.58rem', color: 'var(--text-muted)', fontWeight: 700, paddingBottom: 4 }}>{d}</div>)}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+              {cells.map((cell, i) => (
+                <div key={i} title={cell ? `${cell.ds}: ${cell.count} cards` : ''} style={{
+                  aspectRatio: '1', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.65rem', fontWeight: isToday(cell) ? 700 : 400,
+                  background: !cell ? 'transparent' : cell.count === 0 ? 'var(--input-bg)' : `rgba(167,139,250,${0.2 + (cell.count / maxDay) * 0.75})`,
+                  color: isToday(cell) ? '#fff' : cell?.count > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
+                  outline: isToday(cell) ? '2px solid #a78bfa' : 'none',
+                  outlineOffset: -2,
+                  cursor: cell?.count > 0 ? 'default' : 'default',
+                }}>
+                  {cell?.day}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Deck breakdown */}
       {decks.length > 0 && (
@@ -938,13 +1046,211 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
   )
 }
 
-// ─── Deck row ─────────────────────────────────────────────────────────────────
-function DeckRow({ deck, cards, onReview, onEdit }) {
+// ─── Hero banner ─────────────────────────────────────────────────────────────
+function HeroBanner({ streak, allDue, totalCards, decks, onStudyAll, reviewedToday, goal, onGoalChange }) {
+  const hour     = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const [editing, setEditing] = useState(false)
+  const [goalInput, setGoalInput] = useState(String(goal))
+  return (
+    <div style={{ ...panel, background: 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(167,139,250,0.04) 100%)', borderColor: 'rgba(167,139,250,0.2)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <div style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
+            {greeting} <span style={{ fontSize: '1.1rem' }}>👋</span>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>
+            {allDue > 0 ? `${allDue} cards waiting for review` : totalCards > 0 ? 'All caught up — great work!' : 'Import a deck to get started'}
+          </div>
+        </div>
+        {allDue > 0 && (
+          <button onClick={onStudyAll} style={{ ...btnPrimary, padding: '0.65rem 1.4rem', fontSize: '0.88rem', animation: 'pop 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <Play size={14} /> Study all ({allDue})
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '1.1rem', flexWrap: 'wrap' }}>
+        {/* Goal ring */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <GoalRing done={reviewedToday} goal={goal} size={52} />
+          <div>
+            {editing ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)}
+                  style={{ width: 52, fontSize: '0.8rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text-primary)', padding: '2px 6px', fontFamily: 'inherit' }}
+                  onKeyDown={e => { if (e.key === 'Enter') { onGoalChange(parseInt(goalInput) || 20); setEditing(false) } if (e.key === 'Escape') setEditing(false) }}
+                  autoFocus />
+                <button onClick={() => { onGoalChange(parseInt(goalInput) || 20); setEditing(false) }} style={{ ...btnPrimary, padding: '2px 7px', fontSize: '0.7rem' }}><Check size={10} /></button>
+              </div>
+            ) : (
+              <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color: reviewedToday >= goal ? '#4ade80' : 'var(--text-primary)' }}>{reviewedToday}/{goal}</div>
+                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>daily goal</div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
+
+        {/* Streak */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Flame size={18} style={{ color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }} />
+          <div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }}>{streak.current ?? 0}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>day streak</div>
+          </div>
+        </div>
+
+        <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
+
+        {[
+          { val: totalCards, label: 'cards',  color: '#60a5fa' },
+          { val: decks.length, label: 'decks', color: '#a78bfa' },
+        ].map(({ val, label, color }) => (
+          <div key={label}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color }}>{val}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Word of the day ──────────────────────────────────────────────────────────
+function WordOfDay({ cards }) {
+  const card = useMemo(() => {
+    if (!cards.length) return null
+    const seed = new Date().toDateString()
+    let h = 0; for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
+    return cards[h % cards.length]
+  }, [cards])
+  const [revealed, setRevealed] = useState(false)
+  if (!card) return null
+  return (
+    <div style={{ ...panel, borderColor: 'rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.04)' }}>
+      <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.65rem' }}>
+        ✦ Word of the day
+      </div>
+      <div style={{ fontSize: 'clamp(1.1rem,2.5vw,1.5rem)', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', padding: '0.5rem 0' }}>
+        {card.front}
+      </div>
+      {revealed ? (
+        <div style={{ textAlign: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Answer</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600, color: '#a78bfa' }}>{card.back}</div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+          <button onClick={() => setRevealed(true)} style={{ ...btnGhost, fontSize: '0.75rem' }}><Eye size={12} /> Reveal</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Struggling cards ─────────────────────────────────────────────────────────
+function StrugglingCards({ cards, onStudy }) {
+  const struggling = useMemo(() =>
+    cards.filter(c => (c.lapses ?? 0) >= 3).sort((a,b) => (b.lapses??0) - (a.lapses??0)).slice(0, 5),
+    [cards]
+  )
+  if (!struggling.length) return null
+  return (
+    <div style={panel}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>Struggling cards</span>
+        <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 7px', borderRadius: 99 }}>{struggling.length}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.85rem' }}>
+        {struggling.map(c => (
+          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.65rem', background: 'var(--input-bg)', borderRadius: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.front}</div>
+            </div>
+            <span style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, flexShrink: 0 }}>{c.lapses} lapses</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={onStudy} style={{ ...btnGhost, fontSize: '0.78rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>
+        <Play size={11} /> Practice these
+      </button>
+    </div>
+  )
+}
+
+// ─── Recently mastered ────────────────────────────────────────────────────────
+function RecentlyMastered({ cards }) {
+  const mastered = useMemo(() =>
+    cards.filter(c => c.state === 'review' && c.lastReviewed)
+      .sort((a,b) => (b.lastReviewed??0) - (a.lastReviewed??0)).slice(0, 8),
+    [cards]
+  )
+  if (!mastered.length) return null
+  return (
+    <div style={panel}>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.65rem' }}>
+        Recently in review
+      </div>
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+        {mastered.map(c => (
+          <span key={c.id} style={{ fontSize: '0.72rem', color: '#4ade80', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '3px 10px', borderRadius: 99, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {c.front}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Deck grid card ───────────────────────────────────────────────────────────
+function DeckGridCard({ deck, cards, onReview, onEdit }) {
+  const dc = deckColor(deck)
   const { learning, reviews, newCards } = buildQueue(cards, deck.id, deck)
   const total = cards.filter(c => c.deckId === deck.id).length
   const due   = learning.length + reviews.length + newCards.length
   return (
-    <div style={{ ...panel, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+    <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', transition: 'transform 0.15s, box-shadow 0.15s' }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+    >
+      {/* Cover */}
+      <div style={{ background: dc.gradient, padding: '1.5rem 1rem 1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', minHeight: 80 }}>
+        <span style={{ fontSize: '1.8rem', lineHeight: 1 }}>{dc.emoji}</span>
+        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 99, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 700, color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>
+          {total} cards
+        </div>
+      </div>
+      {/* Body */}
+      <div style={{ background: 'var(--bg-card)', padding: '0.85rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
+          {learning.length > 0 && <span style={{ fontSize: '0.65rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length} learning</span>}
+          {reviews.length  > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length} review</span>}
+          {newCards.length > 0 && <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length} new</span>}
+          {due === 0 && total > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80' }}>✓ caught up</span>}
+        </div>
+        <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <button onClick={() => onEdit(deck)} style={{ ...btnGhost, padding: '0.35rem 0.55rem', flex: '0 0 auto' }}><Settings size={12} /></button>
+          <button onClick={() => onReview(deck)} disabled={due === 0} style={{ ...btnPrimary, flex: 1, justifyContent: 'center', opacity: due === 0 ? 0.4 : 1, cursor: due === 0 ? 'not-allowed' : 'pointer', padding: '0.4rem' }}>
+            <Play size={12} /> {due > 0 ? `Study (${due})` : 'Study'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Deck row ─────────────────────────────────────────────────────────────────
+function DeckRow({ deck, cards, onReview, onEdit }) {
+  const dc = deckColor(deck)
+  const { learning, reviews, newCards } = buildQueue(cards, deck.id, deck)
+  const total = cards.filter(c => c.deckId === deck.id).length
+  const due   = learning.length + reviews.length + newCards.length
+  return (
+    <div style={{ ...panel, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', borderLeft: `4px solid ${dc.accent}` }}>
       <DeckRing cards={cards} deckId={deck.id} size={56} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
@@ -1236,6 +1542,9 @@ export default function LanguagePlanner() {
   const [editing,     setEditing]     = useState(null)
   const [newDeckName, setNewDeckName] = useState('')
   const [streak,      setStreak]      = useState(loadStreak)
+  const [gridView,    setGridView]    = useState(false)
+  const [goal,        setGoal]        = useState(loadGoal)
+  const [reviewedToday, setReviewedToday] = useState(getTotalReviewedToday)
 
   useEffect(() => { saveDecks(decks) }, [decks])
   useEffect(() => { saveCards(cards) }, [cards])
@@ -1244,66 +1553,56 @@ export default function LanguagePlanner() {
 
   function createDeck() {
     if (!newDeckName.trim()) return
-    const deck = { id: uid(), name: newDeckName.trim(), createdAt: Date.now(), newPerDay: DEFAULT_NEW_PER_DAY, maxReviews: DEFAULT_MAX_REVIEWS }
+    const deck = { id: uid(), name: newDeckName.trim(), createdAt: Date.now(), newPerDay: DEFAULT_NEW_PER_DAY, maxReviews: DEFAULT_MAX_REVIEWS, colorIdx: decks.length % DECK_COLOR_PALETTE.length }
     setDecks(d => [...d, deck]); setNewDeckName(''); setEditing(deck)
   }
   function deleteDeck(id) { setDecks(d => d.filter(x => x.id !== id)); setCards(c => c.filter(x => x.deckId !== id)); setEditing(null) }
   function updateDeck(updated) { setDecks(d => d.map(x => x.id === updated.id ? updated : x)) }
   function handleImport(targetId, name, newCards) {
-    setDecks(d => d.find(x => x.id === targetId) ? d : [...d, { id: targetId, name, createdAt: Date.now(), newPerDay: DEFAULT_NEW_PER_DAY, maxReviews: DEFAULT_MAX_REVIEWS }])
+    setDecks(d => d.find(x => x.id === targetId) ? d : [...d, { id: targetId, name, createdAt: Date.now(), newPerDay: DEFAULT_NEW_PER_DAY, maxReviews: DEFAULT_MAX_REVIEWS, colorIdx: d.length % DECK_COLOR_PALETTE.length }])
     setCards(c => [...c, ...newCards])
   }
   function updateCard(updated) { setCards(c => c.map(x => x.id === updated.id ? updated : x)) }
+  function handleGoalChange(g) { setGoal(g); saveGoal(g) }
+  function refreshReviewedToday() { setReviewedToday(getTotalReviewedToday()) }
 
   if (reviewing) {
     const deck = decks.find(d => d.id === reviewing.id) ?? reviewing
     return (
       <div style={{ maxWidth: 740, margin: '0 auto', padding: '1rem 0' }}>
         <ReviewSession cards={cards} deckId={reviewing.id ?? '__all__'} deck={deck}
-          onDone={() => { setReviewing(null); setStreak(loadStreak()) }}
+          onDone={() => { setReviewing(null); setStreak(loadStreak()); refreshReviewedToday() }}
           onUpdateCard={updateCard} />
       </div>
     )
   }
 
-  const dueByDeck = decks.map(d => { const q = buildQueue(cards, d.id, d); return { deck: d, ...q, due: q.learning.length + q.reviews.length + q.newCards.length } }).filter(x => x.due > 0)
+  const dueByDeck       = decks.map(d => { const q = buildQueue(cards, d.id, d); return { deck: d, ...q, due: q.learning.length + q.reviews.length + q.newCards.length } }).filter(x => x.due > 0)
+  const strugglingCards = useMemo(() => cards.filter(c => (c.lapses ?? 0) >= 3), [cards])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900 }}>
-      <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}><span className="gradient-text">Flashcards</span></h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 4 }}>Spaced repetition — study smarter, not harder.</p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 900 }}>
 
-      {/* Stats bar */}
-      <div style={{ ...panel, display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-        {[
-          { icon: Calendar, val: allDue,           label: 'Due',    color: allDue > 0 ? '#f87171' : '#4ade80' },
-          { icon: Layers,   val: cards.length,      label: 'Cards',  color: '#60a5fa' },
-          { icon: Flame,    val: streak.current??0, label: 'Streak', color: '#f97316' },
-          { icon: BookOpen, val: decks.length,      label: 'Decks',  color: '#a78bfa' },
-        ].map(({ icon: Icon, val, label, color }) => (
-          <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 56 }}>
-            <Icon size={14} style={{ color }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', lineHeight: 1 }}>{val}</span>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
-          </div>
-        ))}
-        {allDue > 0 && (
-          <button onClick={() => setReviewing({ id: '__all__', name: 'All decks' })} style={{ ...btnPrimary, marginLeft: 'auto', padding: '0.65rem 1.4rem', fontSize: '0.88rem' }}>
-            <Play size={14} /> Study all ({allDue})
-          </button>
-        )}
-      </div>
+      {/* Hero banner */}
+      <HeroBanner
+        streak={streak} allDue={allDue} totalCards={cards.length} decks={decks}
+        onStudyAll={() => setReviewing({ id: '__all__', name: 'All decks' })}
+        reviewedToday={reviewedToday} goal={goal} onGoalChange={handleGoalChange}
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--input-bg)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
-        {[['today','Today'],['decks','Decks'],['stats','Stats'],['import','Import .apkg']].map(([k,l]) => (
+        {[
+          ['today', allDue > 0 ? `Today (${allDue})` : 'Today'],
+          ['decks',  `Decks${decks.length ? ` (${decks.length})` : ''}`],
+          ['stats',  'Stats'],
+          ['import', 'Import .apkg'],
+        ].map(([k,l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             padding: '0.45rem 1.1rem', borderRadius: 7, border: 'none', cursor: 'pointer',
             fontSize: '0.8rem', fontWeight: 600, fontFamily: 'inherit',
             background: tab === k ? 'var(--bg-card)' : 'transparent',
-            color: tab === k ? 'var(--text-primary)' : 'var(--text-muted)',
+            color: tab === k ? 'var(--text-primary)' : k === 'today' && allDue > 0 && tab !== 'today' ? '#f87171' : 'var(--text-muted)',
             transition: 'all 0.15s',
           }}>{l}</button>
         ))}
@@ -1311,39 +1610,59 @@ export default function LanguagePlanner() {
 
       {/* Today */}
       {tab === 'today' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {dueByDeck.length === 0 && (
-            <div style={{ ...panel, textAlign: 'center', padding: '3rem 2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <WordOfDay cards={cards} />
+          {dueByDeck.length === 0 ? (
+            <div style={{ ...panel, textAlign: 'center', padding: '2.5rem 2rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>✅</div>
               <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Nothing due right now</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{decks.length === 0 ? 'Create a deck or import an .apkg to get started.' : 'All caught up — come back tomorrow.'}</div>
-            </div>
-          )}
-          {dueByDeck.map(({ deck, learning, reviews, newCards }) => (
-            <div key={deck.id} style={{ ...panel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: 5 }}>{deck.name}</div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length}</span>}
-                  {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length}</span>}
-                  {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length}</span>}
-                </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                {decks.length === 0 ? 'Create a deck or import an .apkg to get started.' : 'All caught up — come back tomorrow.'}
               </div>
-              <button onClick={() => setReviewing(deck)} style={btnPrimary}><Play size={13} /> Start</button>
             </div>
-          ))}
+          ) : (
+            dueByDeck.map(({ deck, learning, reviews, newCards }) => {
+              const dc = deckColor(deck)
+              return (
+                <div key={deck.id} style={{ ...panel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', borderLeft: `4px solid ${dc.accent}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '1.3rem' }}>{dc.emoji}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: 4 }}>{deck.name}</div>
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length} learning</span>}
+                        {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length} review</span>}
+                        {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length} new</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setReviewing(deck)} style={btnPrimary}><Play size={13} /> Start</button>
+                </div>
+              )
+            })
+          )}
+          <StrugglingCards cards={cards} onStudy={() => setReviewing({ id: '__all__', name: 'Struggling cards' })} />
+          <RecentlyMastered cards={cards} />
         </div>
       )}
 
       {/* Decks */}
       {tab === 'decks' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <input className="input" placeholder="New deck name…" value={newDeckName} onChange={e => setNewDeckName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createDeck()} style={{ flex: 1, fontSize: '0.85rem' }} />
             <button onClick={createDeck} disabled={!newDeckName.trim()} style={btnPrimary}><Plus size={13} /> Create</button>
+            <button onClick={() => setGridView(v => !v)} title={gridView ? 'List view' : 'Grid view'} style={{ ...btnGhost, padding: '0.45rem 0.65rem' }}>
+              {gridView ? <Layers size={14} /> : <BarChart2 size={14} style={{ transform: 'rotate(90deg)' }} />}
+            </button>
           </div>
           {decks.length === 0 && <div style={{ ...panel, textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No decks yet.</div>}
-          {decks.map(deck => <DeckRow key={deck.id} deck={deck} cards={cards} onReview={setReviewing} onEdit={setEditing} />)}
+          {gridView
+            ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {decks.map(deck => <DeckGridCard key={deck.id} deck={deck} cards={cards} onReview={setReviewing} onEdit={setEditing} />)}
+              </div>
+            : decks.map(deck => <DeckRow key={deck.id} deck={deck} cards={cards} onReview={setReviewing} onEdit={setEditing} />)
+          }
         </div>
       )}
 
