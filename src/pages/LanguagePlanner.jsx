@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   BookOpen, Plus, Trash2, Upload, Play, Pause, RotateCcw,
-  Flame, Check, X, AlertCircle, Eye, ArrowLeft, Settings,
-  Calendar, Layers, BarChart2, Undo2, Tag,
+  Flame, Check, X, AlertCircle, Eye, EyeOff, ArrowLeft, Settings,
+  Calendar, Layers, BarChart2, Undo2, Tag, Moon, Search,
 } from 'lucide-react'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -14,6 +14,8 @@ const DEFAULT_EASE        = 2.5
 const MIN_EASE            = 1.3
 const DEFAULT_NEW_PER_DAY = 20
 const DEFAULT_MAX_REVIEWS = 200
+const WORK_SECS           = 25 * 60
+const BREAK_SECS          = 5 * 60
 
 // ─── SM-2 ─────────────────────────────────────────────────────────────────────
 function rateCard(card, rating) {
@@ -71,10 +73,14 @@ const saveCards  = (c) => { try { localStorage.setItem(CARDS_KEY,  JSON.stringif
 const saveStreak = (s) => { try { localStorage.setItem(STREAK_KEY, JSON.stringify(s)) } catch {} }
 const uid        = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
 const todayStr   = () => new Date().toISOString().slice(0, 10)
+const fmtTime    = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 function dailyKey(deckId) { return `zentry:srs:daily:${deckId}:${todayStr()}` }
 function loadDaily(deckId) { try { return JSON.parse(localStorage.getItem(dailyKey(deckId)) ?? '{}') } catch { return {} } }
 function saveDaily(deckId, d) { try { localStorage.setItem(dailyKey(deckId), JSON.stringify(d)) } catch {} }
+function studyTimeKey() { return `zentry:srs:studytime:${todayStr()}` }
+function loadStudyTime() { return parseInt(localStorage.getItem(studyTimeKey()) ?? '0') || 0 }
+function addStudyTime(secs) { localStorage.setItem(studyTimeKey(), String(loadStudyTime() + secs)) }
 function bumpDaily(deckId, field) {
   const d = loadDaily(deckId); const next = { ...d, [field]: (d[field] ?? 0) + 1 }
   saveDaily(deckId, next); return next
@@ -97,7 +103,9 @@ function buildQueue(cards, deckId, deck) {
   const daily       = loadDaily(deckId === '__all__' ? 'all' : deckId)
   const newSeen     = daily.newSeen    ?? 0
   const reviewsDone = daily.reviewsDone ?? 0
-  const dc = deckId === '__all__' ? cards : cards.filter(c => c.deckId === deckId)
+  const today = todayStr()
+  const dc = (deckId === '__all__' ? cards : cards.filter(c => c.deckId === deckId))
+    .filter(c => !c.suspended && c.buried !== today)
   const learning  = dc.filter(c => (c.state === 'learning' || c.state === 'relearn') && (c.due ?? 0) <= now)
   const reviews   = dc.filter(c => c.state === 'review' && (c.due ?? 0) <= now).slice(0, Math.max(0, maxReviews - reviewsDone))
   const newCards  = dc.filter(c => c.state === 'new' || (!c.state && !c.reps)).slice(0, Math.max(0, newPerDay - newSeen))
@@ -365,9 +373,10 @@ function StatsTab({ cards, decks, streak }) {
     return '#a78bfa'
   }
 
-  const totalReviewed = heatmap.reduce((s, d) => s + d.count, 0)
-  const activeDays    = heatmap.filter(d => d.count > 0).length
-  const today         = heatmap[heatmap.length - 1]?.count ?? 0
+  const totalReviewed  = heatmap.reduce((s, d) => s + d.count, 0)
+  const activeDays     = heatmap.filter(d => d.count > 0).length
+  const todayCards     = heatmap[heatmap.length - 1]?.count ?? 0
+  const studyMinToday  = Math.round(loadStudyTime() / 60)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -375,10 +384,11 @@ function StatsTab({ cards, decks, streak }) {
       {/* Top stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
         {[
-          { label: 'Today',        value: today,         color: today > 0 ? '#4ade80' : 'var(--text-muted)' },
-          { label: '90-day total', value: totalReviewed, color: '#60a5fa' },
-          { label: 'Active days',  value: activeDays,    color: '#fbbf24' },
-          { label: 'Best streak',  value: `${streak.longest ?? 0}🔥`, color: '#f97316' },
+          { label: 'Today',         value: todayCards,    color: todayCards > 0 ? '#4ade80' : 'var(--text-muted)' },
+          { label: '90-day total',  value: totalReviewed, color: '#60a5fa' },
+          { label: 'Active days',   value: activeDays,    color: '#fbbf24' },
+          { label: 'Best streak',   value: `${streak.longest ?? 0}🔥`, color: '#f97316' },
+          { label: 'Study min today', value: studyMinToday > 0 ? `${studyMinToday}m` : '—', color: studyMinToday > 0 ? '#a78bfa' : 'var(--text-muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...panel, padding: '0.9rem 1rem' }}>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
@@ -495,6 +505,75 @@ function StatsTab({ cards, decks, streak }) {
   )
 }
 
+// ─── Dictionary popup ─────────────────────────────────────────────────────────
+function stripHtml(html = '') {
+  return html.replace(/<a[^>]*>([^<]*)<\/a>/gi, '$1').replace(/<[^>]+>/g, '')
+    .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').trim()
+}
+
+function DictionaryPopup({ word, onClose }) {
+  const [data,    setData]    = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
+
+  useEffect(() => {
+    const ctrl = new AbortController()
+    setLoading(true); setError(null); setData(null)
+    fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word.toLowerCase())}`, { signal: ctrl.signal })
+      .then(r => { if (!r.ok) throw new Error('not found'); return r.json() })
+      .then(json => {
+        const sections = json.en ?? json[Object.keys(json)[0]] ?? []
+        setData(sections.slice(0, 5))
+      })
+      .catch(e => { if (e.name !== 'AbortError') setError('No definition found for "' + word + '"') })
+      .finally(() => setLoading(false))
+    return () => ctrl.abort()
+  }, [word])
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ ...panel, width: '100%', maxWidth: 500, maxHeight: '75vh', display: 'flex', flexDirection: 'column', gap: 0, overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.1rem 0 0.85rem' }}>
+          <div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)' }}>{word}</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 8 }}>via Wiktionary</span>
+          </div>
+          <button onClick={onClose} style={{ ...btnGhost, padding: '0.3rem 0.5rem' }}><X size={14} /></button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1.5rem 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: '#a78bfa', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+              Looking up…
+            </div>
+          )}
+          {error && <div style={{ padding: '1rem 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</div>}
+          {data && data.map((section, si) => (
+            <div key={si} style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.5rem' }}>
+                {section.partOfSpeech}
+              </div>
+              <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {section.definitions.slice(0, 4).map((def, di) => (
+                  <li key={di} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    {stripHtml(def.definition)}
+                    {def.examples?.[0] && (
+                      <div style={{ marginTop: 3, fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', paddingLeft: '0.5rem', borderLeft: '2px solid var(--border)' }}>
+                        {stripHtml(def.examples[0])}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Review session ───────────────────────────────────────────────────────────
 function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) {
   const { learning, reviews, newCards } = buildQueue(allCards, deckId, deck)
@@ -504,13 +583,50 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
   const seenReview   = useRef(new Set())
   const undoStack    = useRef([])   // ← undo history
 
-  const [idx,       setIdx]      = useState(0)
-  const [flipPhase, setFlipPhase]= useState('front')  // 'front' | 'flipping' | 'back'
-  const [stats,     setStats]    = useState({ again: 0, hard: 0, good: 0, easy: 0 })
-  const [done,      setDone]     = useState(false)
-  const [streak,    setStreak]   = useState(loadStreak)
-  const [remaining, setRemaining]= useState({ learning: learning.length, reviews: reviews.length, newCards: newCards.length })
-  const [showStreak, setShowStreak] = useState(false)
+  const [idx,          setIdx]         = useState(0)
+  const [flipPhase,    setFlipPhase]   = useState('front')  // 'front' | 'flipping' | 'back'
+  const [stats,        setStats]       = useState({ again: 0, hard: 0, good: 0, easy: 0 })
+  const [done,         setDone]        = useState(false)
+  const [streak,       setStreak]      = useState(loadStreak)
+  const [remaining,    setRemaining]   = useState({ learning: learning.length, reviews: reviews.length, newCards: newCards.length })
+  const [showStreak,   setShowStreak]  = useState(false)
+  const [pomodoro,     setPomodoro]    = useState({ phase: 'work', left: WORK_SECS, running: false })
+  const [selectedWord, setSelectedWord]= useState('')
+  const [dictWord,     setDictWord]    = useState(null)
+  const cardRef = useRef()
+
+  // Pomodoro tick
+  useEffect(() => {
+    if (!pomodoro.running) return
+    const id = setInterval(() => {
+      setPomodoro(p => {
+        if (p.left <= 1) {
+          const next = p.phase === 'work' ? 'break' : 'work'
+          if (p.phase === 'work') addStudyTime(WORK_SECS)
+          return { phase: next, left: next === 'work' ? WORK_SECS : BREAK_SECS, running: true }
+        }
+        return { ...p, left: p.left - 1 }
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [pomodoro.running])
+
+  // Word selection for dictionary
+  useEffect(() => {
+    function onMouseUp() {
+      const sel = window.getSelection()
+      const text = sel?.toString().trim()
+      if (text && text.length >= 2 && text.split(/\s+/).length <= 4) {
+        const range = sel.getRangeAt(0)
+        if (cardRef.current?.contains(range.commonAncestorContainer)) {
+          setSelectedWord(text); return
+        }
+      }
+      setSelectedWord('')
+    }
+    document.addEventListener('mouseup', onMouseUp)
+    return () => document.removeEventListener('mouseup', onMouseUp)
+  }, [])
 
   const queue   = initialQueue.current
   const revealed = flipPhase === 'back'
@@ -584,10 +700,21 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
     setIdx(snap.idx)
     setStats(snap.stats)
     setRemaining(snap.remaining)
-    // Remove requeue entries for this card
     requeue.current = requeue.current.filter(c => c.id !== snap.card.id)
     setFlipPhase('front')
   }
+
+  function skipCard(updateFn) {
+    const card = currentCard(); if (!card) return
+    onUpdateCard(updateFn(card))
+    requeue.current = requeue.current.filter(c => c.id !== card.id)
+    const nextIdx = idx + 1
+    const hasMore = nextIdx < queue.length || requeue.current.length > 0
+    if (!hasMore) { const s = bumpStreak(); setStreak(s); setDone(true); setTimeout(() => setShowStreak(true), 400) }
+    else { setIdx(nextIdx); setFlipPhase('front') }
+  }
+  function suspendCard() { skipCard(c => ({ ...c, suspended: true })) }
+  function buryCard()    { skipCard(c => ({ ...c, buried: todayStr() })) }
 
   // ── Done screen ───────────────────────────────────────────────────────────────
   if (done) {
@@ -637,14 +764,36 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 680, margin: '0 auto' }}>
 
       {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button onClick={onDone} style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><ArrowLeft size={14} /></button>
         {undoStack.current.length > 0 && (
           <button onClick={doUndo} title="Undo last rating (Ctrl+Z)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}>
             <Undo2 size={14} />
           </button>
         )}
+        <button onClick={suspendCard} title="Suspend card (skip forever until unsuspended)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}>
+          <EyeOff size={13} />
+        </button>
+        <button onClick={buryCard} title="Bury until tomorrow" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#60a5fa', borderColor: 'rgba(96,165,250,0.25)' }}>
+          <Moon size={13} />
+        </button>
         <div style={{ flex: 1 }} />
+        {/* Pomodoro timer */}
+        <button
+          onClick={() => setPomodoro(p => ({ ...p, running: !p.running }))}
+          onDoubleClick={() => setPomodoro({ phase: 'work', left: WORK_SECS, running: false })}
+          title={pomodoro.running ? 'Pause timer (double-click to reset)' : 'Start 25-min focus timer'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 700, transition: 'all 0.2s',
+            background: pomodoro.phase === 'work' ? 'rgba(249,115,22,0.12)' : 'rgba(96,165,250,0.12)',
+            color:      pomodoro.phase === 'work' ? '#f97316' : '#60a5fa',
+            outline:    pomodoro.running ? `1px solid ${pomodoro.phase === 'work' ? 'rgba(249,115,22,0.35)' : 'rgba(96,165,250,0.35)'}` : '1px solid var(--border)',
+          }}
+        >
+          {pomodoro.phase === 'work' ? '🍅' : '☕'} {fmtTime(pomodoro.left)}
+          {!pomodoro.running && <Play size={10} style={{ opacity: 0.6 }} />}
+          {pomodoro.running  && <Pause size={10} style={{ opacity: 0.6 }} />}
+        </button>
         <div style={{ display: 'flex', gap: '0.75rem', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82rem', fontWeight: 700 }}>
           <span style={{ color: '#f87171' }}>{remaining.learning}</span>
           <span style={{ color: '#4ade80' }}>{remaining.reviews}</span>
@@ -655,6 +804,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       {/* Card with 3D flip */}
       <div style={{ perspective: '1200px' }}>
         <div
+          ref={cardRef}
           style={{
             ...panel,
             minHeight: 300,
@@ -728,6 +878,18 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
         </div>
       )}
 
+      {/* Word selection → dictionary lookup */}
+      {selectedWord && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 8, fontSize: '0.78rem' }}>
+          <Search size={13} style={{ color: '#a78bfa', flexShrink: 0 }} />
+          <span style={{ color: 'var(--text-muted)' }}>Selected: <strong style={{ color: 'var(--text-primary)' }}>{selectedWord}</strong></span>
+          <button onClick={() => { setDictWord(selectedWord); setSelectedWord('') }} style={{ ...btnPrimary, padding: '0.25rem 0.7rem', fontSize: '0.72rem', marginLeft: 'auto' }}>
+            Look up
+          </button>
+          <button onClick={() => setSelectedWord('')} style={{ ...btnGhost, padding: '0.25rem 0.4rem' }}><X size={11} /></button>
+        </div>
+      )}
+
       {flipPhase === 'front' && (
         <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
           <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>Space</kbd> reveal &nbsp;·&nbsp;
@@ -736,6 +898,8 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
           <kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4 }}>Ctrl+Z</kbd> undo
         </div>
       )}
+
+      {dictWord && <DictionaryPopup word={dictWord} onClose={() => setDictWord(null)} />}
     </div>
   )
 }
@@ -831,8 +995,12 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: 2 }}>{c.front}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>{c.back}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
-                      {c.reps > 0 && <EaseBadge ease={c.ease} />}
+                      {c.suspended
+                        ? <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: "'JetBrains Mono', monospace" }}>Suspended</span>
+                        : <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
+                      }
+                      {c.buried === todayStr() && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: "'JetBrains Mono', monospace" }}>Buried today</span>}
+                      {c.reps > 0 && !c.suspended && <EaseBadge ease={c.ease} />}
                       {c.lapses > 0 && <span style={{ fontSize: '0.58rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace" }}>{c.lapses} lapses</span>}
                       {c.tags && c.tags.split(/\s+/).filter(Boolean).map(t => (
                         <span key={t} style={{ fontSize: '0.58rem', color: 'var(--text-muted)', background: 'var(--border)', padding: '0 5px', borderRadius: 99 }}>{t}</span>
@@ -840,7 +1008,8 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
-                    <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null } : x))} title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
+                    {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)' }}><Eye size={11} /></button>}
+                    <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null, suspended: false, buried: null } : x))} title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
                     <button onClick={() => onSaveCards(cards.filter(x => x.id !== c.id))} style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}><Trash2 size={11} /></button>
                   </div>
                 </div>
