@@ -68,16 +68,16 @@ const STREAK_KEY = 'zentry:srs:streak'
 const loadDecks  = () => { try { return JSON.parse(localStorage.getItem(DECKS_KEY)  ?? '[]') } catch { return [] } }
 const loadCards  = () => { try { return JSON.parse(localStorage.getItem(CARDS_KEY)  ?? '[]') } catch { return [] } }
 const loadStreak = () => { try { return JSON.parse(localStorage.getItem(STREAK_KEY) ?? '{}') } catch { return {} } }
-const saveDecks  = (d) => { try { localStorage.setItem(DECKS_KEY,  JSON.stringify(d)) } catch {} }
-const saveCards  = (c) => { try { localStorage.setItem(CARDS_KEY,  JSON.stringify(c)) } catch {} }
-const saveStreak = (s) => { try { localStorage.setItem(STREAK_KEY, JSON.stringify(s)) } catch {} }
+const saveDecks  = (d) => { try { localStorage.setItem(DECKS_KEY,  JSON.stringify(d)) } catch { /* ignore */ } }
+const saveCards  = (c) => { try { localStorage.setItem(CARDS_KEY,  JSON.stringify(c)) } catch { /* ignore */ } }
+const saveStreak = (s) => { try { localStorage.setItem(STREAK_KEY, JSON.stringify(s)) } catch { /* ignore */ } }
 const uid        = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
 const todayStr   = () => new Date().toISOString().slice(0, 10)
 const fmtTime    = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 function dailyKey(deckId) { return `zentry:srs:daily:${deckId}:${todayStr()}` }
 function loadDaily(deckId) { try { return JSON.parse(localStorage.getItem(dailyKey(deckId)) ?? '{}') } catch { return {} } }
-function saveDaily(deckId, d) { try { localStorage.setItem(dailyKey(deckId), JSON.stringify(d)) } catch {} }
+function saveDaily(deckId, d) { try { localStorage.setItem(dailyKey(deckId), JSON.stringify(d)) } catch { /* ignore */ } }
 function studyTimeKey() { return `zentry:srs:studytime:${todayStr()}` }
 function loadStudyTime() { return parseInt(localStorage.getItem(studyTimeKey()) ?? '0') || 0 }
 function addStudyTime(secs) { localStorage.setItem(studyTimeKey(), String(loadStudyTime() + secs)) }
@@ -123,7 +123,7 @@ function buildHeatmapData() {
     try {
       const d = JSON.parse(localStorage.getItem(key) ?? '{}')
       data[date] = (data[date] ?? 0) + (d.newSeen ?? 0) + (d.reviewsDone ?? 0)
-    } catch {}
+    } catch { /* ignore */ }
   }
   return Array.from({ length: 91 }, (_, i) => {
     const d = new Date(Date.now() - (90 - i) * 86_400_000)
@@ -158,14 +158,14 @@ const DECK_COLOR_PALETTE = [
 ]
 const GOAL_KEY  = 'zentry:srs:goal'
 const loadGoal  = () => parseInt(localStorage.getItem(GOAL_KEY) ?? '20') || 20
-const saveGoal  = (g) => { try { localStorage.setItem(GOAL_KEY, String(g)) } catch {} }
+const saveGoal  = (g) => { try { localStorage.setItem(GOAL_KEY, String(g)) } catch { /* ignore */ } }
 function deckColor(deck) { return DECK_COLOR_PALETTE[(deck.colorIdx ?? 0) % DECK_COLOR_PALETTE.length] }
 function getTotalReviewedToday() {
   const today = todayStr(); let total = 0
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     if (!key?.startsWith('zentry:srs:daily:') || !key.endsWith(`:${today}`)) continue
-    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); total += (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch {}
+    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); total += (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch { /* ignore */ }
   }
   return total
 }
@@ -176,7 +176,7 @@ function buildCalData() {
     if (!key?.startsWith('zentry:srs:daily:')) continue
     const parts = key.split(':'); const date = parts[parts.length - 1]
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue
-    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); data[date] = (data[date] ?? 0) + (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch {}
+    try { const d = JSON.parse(localStorage.getItem(key) ?? '{}'); data[date] = (data[date] ?? 0) + (d.newSeen ?? 0) + (d.reviewsDone ?? 0) } catch { /* ignore */ }
   }
   return data
 }
@@ -322,7 +322,7 @@ async function parseApkg(file, deckId, onProgress) {
         await putMediaBlob(real, blob); mediaStored++
         onProgress?.({ mediaStored, mediaTotal: entries.length })
       }
-    } catch {}
+    } catch { /* ignore */ }
   }
   const cards = res[0].values.map(([flds, tags]) => {
     const parts = flds.split('\x1f')
@@ -630,6 +630,12 @@ function DictionaryPopup({ word, onClose }) {
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
 
+  // Track the current language in a ref so the fetch effect can honour it as the
+  // preferred initial language without re-running whenever the user switches lang
+  // (switchLang handles that locally, no refetch needed).
+  const langRef = useRef(lang)
+  langRef.current = lang
+
   useEffect(() => {
     const ctrl = new AbortController()
     setLoading(true); setError(null); setData(null); setFullJson(null); setLangs([])
@@ -638,7 +644,8 @@ function DictionaryPopup({ word, onClose }) {
       .then(json => {
         const available = Object.keys(json).filter(k => Array.isArray(json[k]) && json[k].length)
         setFullJson(json); setLangs(available)
-        const preferred = available.includes(lang) ? lang : (available[0] ?? 'en')
+        const cur = langRef.current
+        const preferred = available.includes(cur) ? cur : (available[0] ?? 'en')
         setLang(preferred)
         setData((json[preferred] ?? []).slice(0, 6))
       })
@@ -768,7 +775,6 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
   }, [])
 
   const queue   = initialQueue.current
-  const revealed = flipPhase === 'back'
 
   function currentCard() {
     if (idx < queue.length) return queue[idx]
@@ -785,23 +791,28 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
     setTimeout(() => setFlipPhase('back'), 220)
   }
 
+  // Keep the shortcut handler in a ref, refreshed every render, so the keydown
+  // listener binds once but always runs against the latest flipPhase / current
+  // card and rating handlers — no stale closures, no re-subscribing per render.
+  const onKeyRef = useRef(null)
+  onKeyRef.current = (e) => {
+    const card = currentCard(); if (!card) return
+    if (e.code === 'Space') { e.preventDefault(); if (flipPhase === 'front') reveal() }
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doUndo() }
+    if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); suspendCard(); return }
+    if (e.key === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); buryCard(); return }
+    if (e.key === 'd' && !e.ctrlKey && !e.metaKey && !e.altKey && selectedWordRef.current) { e.preventDefault(); setDictWord(selectedWordRef.current); selectedWordRef.current = ''; setSelectedWord(''); return }
+    if (flipPhase !== 'back') return
+    if (e.key === '1') rate(card, 0)
+    if (e.key === '2') rate(card, 1)
+    if (e.key === '3') rate(card, 2)
+    if (e.key === '4') rate(card, 3)
+  }
   useEffect(() => {
-    function onKey(e) {
-      const card = currentCard(); if (!card) return
-      if (e.code === 'Space') { e.preventDefault(); if (flipPhase === 'front') reveal() }
-      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doUndo() }
-      if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); suspendCard(); return }
-      if (e.key === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); buryCard(); return }
-      if (e.key === 'd' && !e.ctrlKey && !e.metaKey && !e.altKey && selectedWordRef.current) { e.preventDefault(); setDictWord(selectedWordRef.current); selectedWordRef.current = ''; setSelectedWord(''); return }
-      if (flipPhase !== 'back') return
-      if (e.key === '1') rate(card, 0)
-      if (e.key === '2') rate(card, 1)
-      if (e.key === '3') rate(card, 2)
-      if (e.key === '4') rate(card, 3)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [flipPhase, idx])
+    const handler = (e) => onKeyRef.current?.(e)
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   function rate(card, rating) {
     const realDeckId = deckId === '__all__' ? card.deckId : deckId
@@ -1578,7 +1589,6 @@ export default function LanguagePlanner() {
   }
 
   const dueByDeck       = decks.map(d => { const q = buildQueue(cards, d.id, d); return { deck: d, ...q, due: q.learning.length + q.reviews.length + q.newCards.length } }).filter(x => x.due > 0)
-  const strugglingCards = useMemo(() => cards.filter(c => (c.lapses ?? 0) >= 3), [cards])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 900 }}>
