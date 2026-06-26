@@ -17,6 +17,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+.claude/
 
 # Logs
 *.log

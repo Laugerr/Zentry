@@ -1,7 +1,8 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home as HomeIcon, Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command, Sun, Moon } from 'lucide-react'
+import { Home as HomeIcon, Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command, Sun, Moon, WifiOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
+import { useOnline } from '../hooks/useOnline'
 
 const NAV_ITEMS = [
   { path: '/home',     icon: HomeIcon,   label: 'Home',             description: 'Your daily snapshot' },
@@ -47,6 +48,7 @@ export default function Layout() {
   const [weather, setWeather]       = useState(null)   // { temp, icon, city }
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [theme, setTheme]           = useState(readTheme)
+  const online                      = useOnline()
 
   // Apply theme to <html> and persist any time it changes.
   useEffect(() => {
@@ -302,6 +304,24 @@ export default function Layout() {
             </div>
           </div>
         </header>
+
+        {/* Offline banner — the app serves cached data as a PWA, so tell the
+            user their data may be stale rather than leaving them guessing. */}
+        {!online && (
+          <div
+            role="status"
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '0.5rem', padding: '0.4rem 1rem',
+              background: 'rgba(249,115,22,0.12)', borderBottom: '1px solid rgba(249,115,22,0.3)',
+              color: '#fb923c', fontSize: '0.72rem', fontWeight: 600,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <WifiOff size={13} />
+            <span>You’re offline — showing cached data</span>
+          </div>
+        )}
 
         {/* Page content — scrollable */}
         <main style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: isMobile ? '1rem' : '1.75rem' }}>

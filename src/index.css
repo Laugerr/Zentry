@@ -53,6 +53,22 @@
     padding: 0;
   }
 
+  /* Keyboard focus ring. The app styles hover via onMouseEnter but has no
+     focus equivalent, so keyboard/tab users get zero feedback on buttons,
+     links and nav items. :focus-visible shows a ring only for keyboard
+     navigation (not mouse clicks), across both themes. */
+  :focus-visible {
+    outline: 2px solid var(--accent-purple);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Inputs already render their own focus ring via .input:focus box-shadow,
+     so suppress the generic outline to avoid doubling up. */
+  .input:focus-visible {
+    outline: none;
+  }
+
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -482,5 +498,20 @@
   .data-table td:first-child {
     color: var(--text-primary);
     font-weight: 500;
+  }
+}
+
+/* Respect users who ask for less motion (vestibular comfort). The app has
+   several animations — page transitions, the hero glow, the markets ticker,
+   the SRS card flip and spinners — so we neutralise them wholesale rather
+   than per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

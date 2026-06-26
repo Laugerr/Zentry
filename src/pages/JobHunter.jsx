@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, ExternalLink, AlertCircle, MapPin, Building2, Calendar, Briefcase, Clock, Download, Mail } from 'lucide-react'
+import { Search, ExternalLink, MapPin, Building2, Calendar, Briefcase, Clock, Download, Mail } from 'lucide-react'
+import { EmptyState, InlineError } from '../components/states'
 
 // ─── Arbeitsagentur API ───────────────────────────────────────────────────────
 
@@ -245,12 +246,11 @@ function JobRow({ job, email, onEmailChange }) {
 function ResultsTable({ jobs, emails, onEmailChange }) {
   if (jobs.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
-        <Search size={36} strokeWidth={1} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.85rem' }}>
-          No results found. Try different keywords or a wider radius.
-        </p>
-      </div>
+      <EmptyState
+        icon={Search}
+        title="No results found"
+        hint="Try different keywords, another city, or a wider search radius."
+      />
     )
   }
   return (
@@ -332,8 +332,7 @@ export default function JobHunter() {
     setEmails((prev) => ({ ...prev, [refnr]: value }))
   }
 
-  async function handleSearch(e) {
-    e.preventDefault()
+  async function runSearch() {
     if (!keywords.trim() && !city.trim()) return
     setLoading(true)
     setError(null)
@@ -348,6 +347,11 @@ export default function JobHunter() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSearch(e) {
+    e.preventDefault()
+    runSearch()
   }
 
   return (
@@ -405,14 +409,21 @@ export default function JobHunter() {
         </form>
       </div>
 
+      {/* First visit — nothing searched yet */}
+      {!hasSearched && !loading && (
+        <div className="card" style={{ padding: 0 }}>
+          <EmptyState
+            icon={Briefcase}
+            title="Search for jobs to get started"
+            hint="Enter keywords and a city above, then hit Search. Results come live from the Bundesagentur für Arbeit."
+          />
+        </div>
+      )}
+
       {/* Error */}
-      {error && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem 1.25rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', color: '#f87171' }}>
-          <AlertCircle size={18} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 1 }} />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.25rem' }}>Error</div>
-            <div style={{ fontSize: '0.82rem', opacity: 0.8 }}>{error}</div>
-          </div>
+      {error && !loading && (
+        <div className="card" style={{ padding: 0 }}>
+          <InlineError message={error} onRetry={runSearch} />
         </div>
       )}
 
