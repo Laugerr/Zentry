@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
-  RefreshCw, AlertCircle, TrendingUp, TrendingDown, Minus, Plus, Search,
+  RefreshCw, TrendingUp, TrendingDown, Minus, Search,
   ArrowRightLeft, X, Star, Bitcoin, DollarSign,
 } from 'lucide-react'
+import { useCachedFetch } from '../hooks/useCachedFetch'
+import { InlineError } from '../components/states'
 
 // ─── APIs (all free, no keys) ────────────────────────────────────────────────
 //
@@ -174,26 +176,23 @@ async function fetchCrypto(ids, vs) {
 // ─── FX tab ──────────────────────────────────────────────────────────────────
 
 function FxTab({ base, setBase }) {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
-  const [fetchedAt, setFetchedAt] = useState(null)
   const [watch, setWatch] = useState(() => readJSON(LS.fxWatch, ['EUR', 'GBP', 'JPY', 'CHF']))
 
   useEffect(() => { writeJSON(LS.fxWatch, watch) }, [watch])
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    try {
-      const json = await fetchFxLatest(base)
-      setData(json); setFetchedAt(new Date())
-    } catch (e) {
-      setError(e.message || 'Failed to load FX rates')
-    } finally { setLoading(false) }
-  }, [base])
+  // SWR via the shared cache: instant on re-entry within the TTL, deduped across
+  // mounts, and retryable. `refresh` also drives the 1-min live polling below.
+  const { data, loading, error, refresh } = useCachedFetch(
+    `fw:fx:${base}`,
+    () => fetchFxLatest(base),
+    { ttl: REFRESH_MS },
+  )
+  const load = refresh
+  useEffect(() => { const id = setInterval(refresh, REFRESH_MS); return () => clearInterval(id) }, [refresh])
 
-  useEffect(() => { load() }, [load])
-  useEffect(() => { const id = setInterval(load, REFRESH_MS); return () => clearInterval(id) }, [load])
+  // Stamp the last successful update for the "updated HH:MM" footer.
+  const [fetchedAt, setFetchedAt] = useState(null)
+  useEffect(() => { if (data) setFetchedAt(new Date()) }, [data])
 
   const toggleWatch = (code) => setWatch((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [code, ...prev])
 
@@ -225,10 +224,8 @@ function FxTab({ base, setBase }) {
           </div>
         </div>
 
-        {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.1rem', color: '#f87171', fontSize: '0.8rem' }}>
-            <AlertCircle size={14} /> {error}
-          </div>
+        {error && !data && (
+          <InlineError message={error.message || 'Failed to load FX rates'} onRetry={refresh} />
         )}
 
         {loading && !data && (
@@ -420,27 +417,20 @@ function Converter({ base, rates }) {
 // ─── Crypto tab ──────────────────────────────────────────────────────────────
 
 function CryptoTab({ quote, setQuote }) {
-  const [rows,    setRows]    = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
   const [watch,   setWatch]   = useState(() => readJSON(LS.cryptoWatch, ['bitcoin', 'ethereum', 'solana']))
   const [search,  setSearch]  = useState('')
 
   useEffect(() => { writeJSON(LS.cryptoWatch, watch) }, [watch])
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    try {
-      const ids = CRYPTO_CATALOGUE.map((c) => c.id)
-      const data = await fetchCrypto(ids, quote)
-      setRows(data)
-    } catch (e) {
-      setError(e.message || 'Failed to load crypto prices — CoinGecko may be rate-limiting')
-    } finally { setLoading(false) }
-  }, [quote])
-
-  useEffect(() => { load() }, [load])
-  useEffect(() => { const id = setInterval(load, REFRESH_MS); return () => clearInterval(id) }, [load])
+  // SWR via the shared cache; `refresh` also drives the 1-min live polling.
+  const { data: rowsData, loading, error, refresh } = useCachedFetch(
+    `fw:crypto:${quote}`,
+    () => fetchCrypto(CRYPTO_CATALOGUE.map((c) => c.id), quote),
+    { ttl: REFRESH_MS },
+  )
+  const rows = useMemo(() => rowsData ?? [], [rowsData])
+  const load = refresh
+  useEffect(() => { const id = setInterval(refresh, REFRESH_MS); return () => clearInterval(id) }, [refresh])
 
   const toggleWatch = (id) => setWatch((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev])
 
@@ -489,9 +479,12 @@ function CryptoTab({ quote, setQuote }) {
         </div>
       </div>
 
-      {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, color: '#f87171', fontSize: '0.8rem' }}>
-          <AlertCircle size={14} /> {error}
+      {error && rows.length === 0 && (
+        <div className="card" style={{ padding: 0 }}>
+          <InlineError
+            message={error.message || 'Failed to load crypto prices — CoinGecko may be rate-limiting'}
+            onRetry={refresh}
+          />
         </div>
       )}
 
