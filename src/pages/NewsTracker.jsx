@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
-  RefreshCw, ExternalLink, AlertCircle, Globe, Newspaper, ChevronDown, Clock,
+  RefreshCw, ExternalLink, Globe, Newspaper, ChevronDown, Clock,
   Search, Bookmark, LayoutGrid, Rows, List as ListIcon, X, TrendingUp, Check,
 } from 'lucide-react'
+import { InlineError } from '../components/states'
 
 // ─── Feed catalogue ───────────────────────────────────────────────────────────
 
@@ -227,6 +228,7 @@ function CountryStats({ countryCode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
   const [now, setNow]         = useState(new Date())
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -250,7 +252,7 @@ function CountryStats({ countryCode }) {
       } catch (e) { setError(e.message) } finally { setLoading(false) }
     }
     load()
-  }, [countryCode])
+  }, [countryCode, reloadTick])
 
   const tz = COUNTRY_TIMEZONES[countryCode]
   const localTime = tz ? now.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : null
@@ -263,8 +265,8 @@ function CountryStats({ countryCode }) {
     </div>
   )
   if (error) return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '10px', color: '#f87171', fontSize: '0.78rem' }}>
-      <AlertCircle size={14} /> {error}
+    <div className="card" style={{ padding: 0 }}>
+      <InlineError message={error} onRetry={() => setReloadTick((t) => t + 1)} />
     </div>
   )
   if (!info) return null
@@ -678,9 +680,7 @@ function FeedColumn({ feed, category, search, readSet, bookmarkSet, onBookmark, 
       </div>
 
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.78rem' }}>
-          <AlertCircle size={14} strokeWidth={1.5} /> Failed to load: {error}
-        </div>
+        <InlineError message={error} onRetry={refresh} />
       )}
 
       {loading && !error && (
