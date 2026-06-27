@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
-  RefreshCw, AlertCircle, MapPin, Clock, ExternalLink, Newspaper,
+  RefreshCw, MapPin, Clock, ExternalLink, Newspaper,
   Search, Star, ChevronDown, ChevronLeft, ChevronRight, Trophy,
   Zap, Calendar, Filter, X,
 } from 'lucide-react'
+import { InlineError } from '../components/states'
 
 // ─── League catalogue ─────────────────────────────────────────────────────────
 
@@ -465,6 +466,7 @@ function NewsFeed({ leagueId, feedCache, setFeedCache }) {
   const [articles, setArticles] = useState([])
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -486,7 +488,7 @@ function NewsFeed({ leagueId, feedCache, setFeedCache }) {
     }
     load()
     return () => { cancelled = true }
-  }, [leagueId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [leagueId, reloadTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -501,9 +503,7 @@ function NewsFeed({ leagueId, feedCache, setFeedCache }) {
         </div>
       )}
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.8rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', color: '#f87171', fontSize: '0.73rem' }}>
-          <AlertCircle size={13} /> {error}
-        </div>
+        <InlineError message={error} onRetry={() => setReloadTick((t) => t + 1)} />
       )}
       {!loading && !error && articles.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>No articles found</div>
@@ -519,6 +519,7 @@ function StandingsView({ leagueId }) {
   const [rows, setRows]       = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -557,10 +558,10 @@ function StandingsView({ leagueId }) {
       }
     })()
     return () => { cancelled = true }
-  }, [leagueId])
+  }, [leagueId, reloadTick])
 
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading standings…</div>
-  if (error)   return <div style={{ padding: '1rem', color: '#f87171', fontSize: '0.75rem' }}><AlertCircle size={13} style={{ display: 'inline', marginRight: 4 }} />{error}</div>
+  if (error)   return <InlineError message={error} onRetry={() => setReloadTick((t) => t + 1)} />
   if (!rows.length) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No standings available for this competition.</div>
 
   const groupedByGroup = rows.reduce((acc, r) => {
@@ -984,9 +985,7 @@ export default function FootballToday() {
               </div>
 
               {errors[tab] && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 0.9rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '0.75rem' }}>
-                  <AlertCircle size={13} /> Failed: {errors[tab]}
-                </div>
+                <InlineError message={errors[tab]} onRetry={loadMatches} />
               )}
 
               {activeEvents.length === 0 && !errors[tab] ? (
