@@ -5,6 +5,8 @@ import {
   Search, ChevronDown, Star, Clock, SkipForward, SkipBack, Shuffle,
   Moon, List, MapIcon, X, Globe,
 } from 'lucide-react'
+import { useCachedFetch } from '../hooks/useCachedFetch'
+import { InlineError } from '../components/states'
 
 // World map topojson (hosted by observable/world-atlas, MIT license)
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -456,9 +458,6 @@ function StationRow({ station, active, favourite, onPlay, onToggleFav }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function LiveRadio() {
-  const [stations,   setStations]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
   const [genre,      setGenre]      = useState('all')
   const [country,    setCountry]    = useState('')           // ISO country code filter
   const [search,     setSearch]     = useState('')
@@ -508,20 +507,15 @@ export default function LiveRadio() {
     ? { bg: '#f1f3f8', land: '#e5e7eb', stroke: '#cbd1da', hover: '#dadee8', hoverStroke: '#9ca3af' }
     : { bg: 'rgba(10,12,20,0.9)', land: '#1e2235', stroke: '#2d3250', hover: '#252840', hoverStroke: '#3d4270' }
 
-  // Load stations whenever filters change
-  const load = useCallback(async (g, c) => {
-    setLoading(true); setError(null)
-    try {
-      const data = await fetchStations(g, c)
-      setStations(data)
-    } catch (e) {
-      setError(e.message || 'Failed')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { load(genre, country) }, [load, genre, country])
+  // Load stations whenever filters change. SWR via the shared cache means
+  // re-selecting a genre/country you viewed recently is instant, and the
+  // request is deduped + retryable.
+  const { data: stationsData, loading, error, refresh } = useCachedFetch(
+    `lr:stations:${genre}:${country || 'ww'}`,
+    () => fetchStations(genre, country),
+    { ttl: 15 * 60_000 },
+  )
+  const stations = useMemo(() => stationsData ?? [], [stationsData])
 
   // Auto-dismiss the "now playing" pill after a moment.
   useEffect(() => {
@@ -987,10 +981,8 @@ export default function LiveRadio() {
             </div>
           )}
           {error && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', zIndex: 10 }}>
-              <AlertCircle size={24} color="#f87171" />
-              <span style={{ fontSize: '0.8rem', color: '#f87171' }}>Failed to load stations: {error}</span>
-              <button onClick={() => load(genre, country)} className="btn-ghost" style={{ fontSize: '0.78rem', padding: '0.4rem 0.9rem' }}>Retry</button>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+              <InlineError message={error.message || 'Failed to load stations'} onRetry={refresh} />
             </div>
           )}
 
