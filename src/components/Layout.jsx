@@ -3,6 +3,7 @@ import { Home as HomeIcon, Briefcase, BookOpen, Newspaper, FileText, Menu, X, Ra
 import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
 import { useOnline } from '../hooks/useOnline'
+import { useWeather, WMO_ICON } from '../hooks/useWeather'
 
 const NAV_ITEMS = [
   { path: '/home',     icon: HomeIcon,   label: 'Home',             description: 'Your daily snapshot' },
@@ -33,19 +34,11 @@ function formatTime(date) {
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
-const WMO_ICON = {
-  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-  51: '🌦️', 53: '🌦️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-  71: '🌨️', 73: '❄️', 75: '❄️', 80: '🌦️', 81: '🌧️', 82: '🌧️',
-  95: '⛈️', 96: '⛈️', 99: '⛈️',
-}
-
 export default function Layout() {
   const location  = useLocation()
   const [now, setNow]               = useState(new Date())
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 768)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [weather, setWeather]       = useState(null)   // { temp, icon, city }
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [theme, setTheme]           = useState(readTheme)
   const online                      = useOnline()
@@ -94,31 +87,10 @@ export default function Layout() {
     return () => { document.body.style.overflow = '' }
   }, [isMobile, sidebarOpen])
 
-  // Fetch weather for current location on mount
-  useEffect(() => {
-    async function fetchWeather() {
-      try {
-        // Get coordinates from IP (ipinfo returns "lat,lon" in loc field)
-        const geo = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) })
-        if (!geo.ok) return
-        const { loc, city } = await geo.json()
-        if (!loc) return
-        const [latitude, longitude] = loc.split(',').map(Number)
-        if (!latitude || !longitude) return
-
-        // Get current weather from Open-Meteo (no API key needed)
-        const wx = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`,
-          { signal: AbortSignal.timeout(5000) }
-        )
-        if (!wx.ok) return
-        const { current_weather } = await wx.json()
-        const icon = WMO_ICON[current_weather.weathercode] ?? '🌡️'
-        setWeather({ temp: Math.round(current_weather.temperature), icon, city: city ?? '' })
-      } catch { /* silently ignore */ }
-    }
-    fetchWeather()
-  }, [])
+  // Weather for the header pill — shares one cached geo + weather request with
+  // the Home hero via useWeather (dedupes to a single network round-trip).
+  const { data: wx } = useWeather()
+  const weather = wx ? { temp: wx.temp, icon: WMO_ICON[wx.code] ?? '🌡️', city: wx.city ?? '' } : null
 
   const activeNav = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))
 

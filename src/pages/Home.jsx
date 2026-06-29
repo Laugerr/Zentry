@@ -6,6 +6,7 @@ import {
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
 import { useCachedFetch } from '../hooks/useCachedFetch'
+import { useWeather, WMO_ICON } from '../hooks/useWeather'
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 const readJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k) ?? '') ?? fb } catch { return fb } }
@@ -19,12 +20,6 @@ const timeAgo  = (iso) => {
 }
 const greet = (h) => h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 
-const WMO_ICON = {
-  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
-  51: '🌦️', 53: '🌦️', 55: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️',
-  71: '🌨️', 73: '❄️', 75: '❄️', 80: '🌦️', 81: '🌧️', 82: '🌧️',
-  95: '⛈️', 96: '⛈️', 99: '⛈️',
-}
 const WMO_LABEL = {
   0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
   45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
@@ -69,30 +64,8 @@ function Skeleton({ h = 14, w = '100%', r = 4 }) {
 const panelStyle = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.1rem 1.2rem' }
 
 // ─── Weather (lives inside hero) ──────────────────────────────────────────────
-const fetchWeather = async ({ signal }) => {
-  const geoRes = await fetch('https://ipinfo.io/json', { signal })
-  if (!geoRes.ok) throw new Error('geo')
-  const { loc, city, country } = await geoRes.json()
-  if (!loc) throw new Error('loc')
-  const [lat, lon] = loc.split(',').map(Number)
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
-  const wxRes = await fetch(url, { signal })
-  if (!wxRes.ok) throw new Error('wx')
-  const j = await wxRes.json()
-  return {
-    city, country,
-    temp: Math.round(j.current.temperature_2m),
-    feels: Math.round(j.current.apparent_temperature),
-    humidity: j.current.relative_humidity_2m,
-    wind: Math.round(j.current.wind_speed_10m),
-    code: j.current.weathercode,
-    hi: Math.round(j.daily.temperature_2m_max?.[0] ?? 0),
-    lo: Math.round(j.daily.temperature_2m_min?.[0] ?? 0),
-  }
-}
-
 function HeroWeather() {
-  const { data, error, loading } = useCachedFetch('home:weather', fetchWeather, { ttl: 15 * 60_000 })
+  const { data, error, loading } = useWeather()
   if (loading && !data) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 240 }}>
