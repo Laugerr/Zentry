@@ -770,7 +770,7 @@ function EntryCard({ label, onRemove, children }) {
     <div style={{ padding: '0.75rem', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-        <button onClick={onRemove} className="btn-ghost" style={{ padding: '0.2rem', color: '#f87171' }}><Trash2 size={12} /></button>
+        <button onClick={onRemove} aria-label="Remove item" className="btn-ghost" style={{ padding: '0.2rem', color: '#f87171' }}><Trash2 size={12} /></button>
       </div>
       {children}
     </div>
@@ -813,7 +813,7 @@ function CoverLetterForm({ cover, setCoverField, setCoverSub, addPara, updPara, 
                 <textarea value={pg} onChange={(e) => updPara(i, e.target.value)} placeholder="Write a paragraph…" rows={3}
                   style={{ ...iStyle, resize: 'vertical', lineHeight: 1.5 }} />
                 {cover.paragraphs.length > 1 && (
-                  <button onClick={() => delPara(i)} className="btn-ghost" style={{ padding: '0.22rem', color: '#f87171', flexShrink: 0, marginTop: '0.2rem' }}>
+                  <button onClick={() => delPara(i)} aria-label="Delete paragraph" className="btn-ghost" style={{ padding: '0.22rem', color: '#f87171', flexShrink: 0, marginTop: '0.2rem' }}>
                     <Trash2 size={12} />
                   </button>
                 )}
@@ -866,7 +866,7 @@ function ImportModal({ onClose, onImportJSON, onImportLinkedIn, onExportJSON, se
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem' }}>
           <h2 style={{ fontSize: '1rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-primary)' }}>Import CV data</h2>
-          <button onClick={onClose} className="btn-ghost" style={{ padding: '0.3rem', border: 'none' }}><X size={14} /></button>
+          <button onClick={onClose} aria-label="Close" className="btn-ghost" style={{ padding: '0.3rem', border: 'none' }}><X size={14} /></button>
         </div>
 
         <div style={{ display: 'grid', gap: '0.75rem' }}>
@@ -1292,7 +1292,7 @@ body { background:white; }
                         <div key={i} style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
                           <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>•</span>
                           <input value={b} onChange={e => updBullet(exp.id, i, e.target.value)} placeholder="Describe an achievement…" style={{ ...iStyle, background: 'var(--bg-secondary)' }} />
-                          {exp.bullets.length > 1 && <button onClick={() => delBullet(exp.id, i)} className="btn-ghost" style={{ padding: '0.18rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={11} /></button>}
+                          {exp.bullets.length > 1 && <button onClick={() => delBullet(exp.id, i)} aria-label="Delete bullet point" className="btn-ghost" style={{ padding: '0.18rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={11} /></button>}
                         </div>
                       ))}
                       <AddBtn onClick={() => addBullet(exp.id)} label="Add bullet" />
@@ -1343,7 +1343,7 @@ body { background:white; }
                 <div key={g.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.6rem', background: 'var(--bg-primary)', borderRadius: '7px', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <Inp value={g.category} onChange={v => updSkill(g.id, 'category', v)} placeholder="Category — e.g. Frontend, DevOps…" />
-                    <button onClick={() => delSkill(g.id)} className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={12} /></button>
+                    <button onClick={() => delSkill(g.id)} aria-label="Delete skill group" className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={12} /></button>
                   </div>
                   <Field hint="Comma-separated">
                     <Inp value={g.items.join(', ')} onChange={v => updSkill(g.id, 'items', v.split(',').map(s => s.trim()).filter(Boolean))} placeholder="React, TypeScript, Node.js, Docker…" />
@@ -1360,7 +1360,7 @@ body { background:white; }
                   <select value={l.level} onChange={e => updLang(l.id, 'level', e.target.value)} style={{ ...iStyle, width: 'auto', flexShrink: 0 }}>
                     {CEFR_LEVELS.map(lv => <option key={lv} value={lv}>{lv}</option>)}
                   </select>
-                  <button onClick={() => delLang(l.id)} className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={12} /></button>
+                  <button onClick={() => delLang(l.id)} aria-label="Delete language" className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0 }}><Trash2 size={12} /></button>
                 </div>
               ))}
               <AddBtn onClick={addLang} label="Add language" />
@@ -1376,7 +1376,7 @@ body { background:white; }
                       <Inp value={c.date} onChange={v => updCert(c.id, 'date', v)} placeholder="2024" />
                     </Grid2>
                   </div>
-                  <button onClick={() => delCert(c.id)} className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0, marginTop: '0.15rem' }}><Trash2 size={12} /></button>
+                  <button onClick={() => delCert(c.id)} aria-label="Delete certification" className="btn-ghost" style={{ padding: '0.25rem', color: '#f87171', flexShrink: 0, marginTop: '0.15rem' }}><Trash2 size={12} /></button>
                 </div>
               ))}
               <AddBtn onClick={addCert} label="Add certification" />

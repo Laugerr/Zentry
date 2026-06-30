@@ -919,16 +919,16 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
 
       {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <button onClick={onDone} style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><ArrowLeft size={14} /></button>
+        <button onClick={onDone} aria-label="Exit review" style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><ArrowLeft size={14} /></button>
         {undoStack.current.length > 0 && (
-          <button onClick={doUndo} title="Undo last rating (Ctrl+Z)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}>
+          <button onClick={doUndo} aria-label="Undo last rating" title="Undo last rating (Ctrl+Z)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}>
             <Undo2 size={14} />
           </button>
         )}
-        <button onClick={suspendCard} title="Suspend card (skip forever until unsuspended)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}>
+        <button onClick={suspendCard} aria-label="Suspend card" title="Suspend card (skip forever until unsuspended)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}>
           <EyeOff size={13} />
         </button>
-        <button onClick={buryCard} title="Bury until tomorrow" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#60a5fa', borderColor: 'rgba(96,165,250,0.25)' }}>
+        <button onClick={buryCard} aria-label="Bury card until tomorrow" title="Bury until tomorrow" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#60a5fa', borderColor: 'rgba(96,165,250,0.25)' }}>
           <Moon size={13} />
         </button>
         <div style={{ flex: 1 }} />
@@ -936,6 +936,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
         <button
           onClick={() => setPomodoro(p => ({ ...p, running: !p.running }))}
           onDoubleClick={() => setPomodoro({ phase: 'work', left: WORK_SECS, running: false })}
+          aria-label="Focus timer (double-click to reset)"
           title={pomodoro.running ? 'Pause timer (double-click to reset)' : 'Start 25-min focus timer'}
           style={{
             display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 700, transition: 'all 0.2s',
@@ -1461,8 +1462,8 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)' }}><Eye size={11} /></button>}
-                    <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null, suspended: false, buried: null } : x))} title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
+                    {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} aria-label="Unsuspend card" title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)' }}><Eye size={11} /></button>}
+                    <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null, suspended: false, buried: null } : x))} aria-label="Reset card progress" title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
                     <button onClick={() => onSaveCards(cards.filter(x => x.id !== c.id))} style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}><Trash2 size={11} /></button>
                   </div>
                 </div>
@@ -1662,7 +1663,7 @@ export default function LanguagePlanner() {
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <input className="input" placeholder="New deck name…" value={newDeckName} onChange={e => setNewDeckName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createDeck()} style={{ flex: 1, fontSize: '0.85rem' }} />
             <button onClick={createDeck} disabled={!newDeckName.trim()} style={btnPrimary}><Plus size={13} /> Create</button>
-            <button onClick={() => setGridView(v => !v)} title={gridView ? 'List view' : 'Grid view'} style={{ ...btnGhost, padding: '0.45rem 0.65rem' }}>
+            <button onClick={() => setGridView(v => !v)} aria-label={gridView ? 'Switch to list view' : 'Switch to grid view'} title={gridView ? 'List view' : 'Grid view'} style={{ ...btnGhost, padding: '0.45rem 0.65rem' }}>
               {gridView ? <Layers size={14} /> : <BarChart2 size={14} style={{ transform: 'rotate(90deg)' }} />}
             </button>
           </div>
