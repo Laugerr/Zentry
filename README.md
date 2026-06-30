@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/Dark%20Theme-0a0a0f?style=flat-square&logoColor=white" />
 </p>
 
-**A dark, minimal dashboard with six tools — all free, all in one place.**
+**A dark, minimal dashboard with eight tools — all free, all in one place.**
 
 <p>
   <a href="https://zentry-dash.vercel.app">
@@ -33,6 +33,11 @@
 ## 🧰 Tools
 
 <table>
+  <tr>
+    <td>🏠</td>
+    <td><strong>Home</strong></td>
+    <td>Daily snapshot — greeting, local weather, a live football panel, markets ticker, top-headlines carousel, language streaks, and quick links into every tool.</td>
+  </tr>
   <tr>
     <td>📰</td>
     <td><strong>News Tracker</strong></td>
@@ -63,6 +68,11 @@
     <td><strong>Football Today</strong></td>
     <td>Live fixtures, scores & standings across 14 competitions. Date navigator, status filters (live/upcoming/finished), team search, ★ favourite teams, expandable match details (goals, cards, stats), and league tables — all auto-refreshing.</td>
   </tr>
+  <tr>
+    <td>💹</td>
+    <td><strong>Finance Watch</strong></td>
+    <td>Live FX rates (ECB-backed) with a converter &amp; 30-day sparklines, plus crypto prices from CoinGecko. ★ watchlists, 1-min auto-refresh — no key, no paywall.</td>
+  </tr>
 </table>
 
 ---
@@ -90,9 +100,12 @@
 | codetabs · rss2json · allorigins | RSS proxy chain for News Tracker |
 | Bundesagentur für Arbeit | Job listings (via Vercel serverless proxy) |
 | Radio Browser API | Live radio stations & stream URLs |
-| ESPN public scoreboard | Football fixtures & live scores |
+| ESPN public scoreboard | Football fixtures, live scores & Home panel |
 | BBC Sport RSS + The Guardian RSS | Football news feeds |
-| Open-Meteo | Weather — sidebar & country stats |
+| Frankfurter (ECB) | FX rates & history for Finance Watch |
+| CoinGecko | Crypto prices for Finance Watch & Home ticker |
+| Wiktionary REST | Word definitions in Language Planner |
+| Open-Meteo | Weather — header pill, Home hero & country stats |
 | ipinfo.io | Location detection for local weather |
 | restcountries.com | Country info & flags in News Tracker |
 
@@ -118,16 +131,26 @@ Zentry/
 ├── api/
 │   └── jobs.js                  # Vercel serverless proxy → Bundesagentur API
 ├── src/
-│   ├── App.jsx                  # Routes
+│   ├── App.jsx                  # Routes (lazy-loaded + error boundaries)
 │   ├── components/
-│   │   └── Layout.jsx           # Sidebar · header · weather · clock
+│   │   ├── Layout.jsx           # Sidebar · header · weather · clock · offline banner
+│   │   ├── CommandPalette.jsx   # ⌘K / Ctrl+K quick navigation
+│   │   ├── PageErrorBoundary.jsx# Per-route crash isolation
+│   │   └── states.jsx           # Shared EmptyState / InlineError
+│   ├── hooks/
+│   │   ├── useCachedFetch.js    # Stale-while-revalidate fetch + dedup
+│   │   ├── useWeather.js        # Shared geo + weather (header & Home)
+│   │   └── useOnline.js         # Connectivity status for offline banner
+│   ├── index.css                # Theme tokens, focus ring, reduced-motion
 │   └── pages/
+│       ├── Home.jsx             # 🏠 Daily snapshot dashboard
 │       ├── NewsTracker.jsx      # 📰 32-country news feeds
 │       ├── JobHunter.jsx        # 💼 German job search
-│       ├── LanguagePlanner.jsx  # 📚 Weekly learning tracker
+│       ├── LanguagePlanner.jsx  # 📚 Anki-style SRS learning tracker
 │       ├── CVBuilder.jsx        # 📄 Lebenslauf builder
 │       ├── LiveRadio.jsx        # 📻 World radio map
-│       └── FootballToday.jsx    # ⚽ Live scores & feeds
+│       ├── FootballToday.jsx    # ⚽ Live scores & feeds
+│       └── FinanceWatch.jsx     # 💹 FX rates & crypto prices
 └── vercel.json
 ```
 
