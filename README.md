@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/Dark%20Theme-0a0a0f?style=flat-square&logoColor=white" />
 </p>
 
-**A dark, minimal dashboard with eight tools — all free, all in one place.**
+**A dark, minimal dashboard with five tools — all free, all in one place.**
 
 <p>
   <a href="https://zentry-dash.vercel.app">
@@ -44,19 +44,9 @@
     <td>Live RSS feeds from 32 countries across Africa, Europe, Asia & the Americas. Category filters, country stats, auto-refresh every 5 min.</td>
   </tr>
   <tr>
-    <td>💼</td>
-    <td><strong>Job Hunter</strong></td>
-    <td>Search German job listings via the Bundesagentur für Arbeit. No API key needed, proxied through Vercel.</td>
-  </tr>
-  <tr>
     <td>📚</td>
     <td><strong>Language Planner</strong></td>
     <td>Weekly language learning tracker. Multiple languages, progress stored locally per language.</td>
-  </tr>
-  <tr>
-    <td>📄</td>
-    <td><strong>CV Builder</strong></td>
-    <td>Build a German-format Lebenslauf with live preview, PDF export, and two templates.</td>
   </tr>
   <tr>
     <td>📻</td>
@@ -67,11 +57,6 @@
     <td>⚽</td>
     <td><strong>Football Today</strong></td>
     <td>Live fixtures, scores & standings across 14 competitions. Date navigator, status filters (live/upcoming/finished), team search, ★ favourite teams, expandable match details (goals, cards, stats), and league tables — all auto-refreshing.</td>
-  </tr>
-  <tr>
-    <td>💹</td>
-    <td><strong>Finance Watch</strong></td>
-    <td>Live FX rates (ECB-backed) with a converter &amp; 30-day sparklines, plus crypto prices from CoinGecko. ★ watchlists, 1-min auto-refresh — no key, no paywall.</td>
   </tr>
 </table>
 
@@ -98,12 +83,10 @@
 | API | Purpose |
 |---|---|
 | codetabs · rss2json · allorigins | RSS proxy chain for News Tracker |
-| Bundesagentur für Arbeit | Job listings (via Vercel serverless proxy) |
 | Radio Browser API | Live radio stations & stream URLs |
 | ESPN public scoreboard | Football fixtures, live scores & Home panel |
 | BBC Sport RSS + The Guardian RSS | Football news feeds |
-| Frankfurter (ECB) | FX rates & history for Finance Watch |
-| CoinGecko | Crypto prices for Finance Watch & Home ticker |
+| CoinGecko | Crypto prices for the Home markets ticker |
 | Wiktionary REST | Word definitions in Language Planner |
 | Open-Meteo | Weather — header pill, Home hero & country stats |
 | ipinfo.io | Location detection for local weather |
@@ -128,8 +111,6 @@ Open [http://localhost:5173](http://localhost:5173)
 
 ```
 Zentry/
-├── api/
-│   └── jobs.js                  # Vercel serverless proxy → Bundesagentur API
 ├── src/
 │   ├── App.jsx                  # Routes (lazy-loaded + error boundaries)
 │   ├── components/
@@ -145,12 +126,9 @@ Zentry/
 │   └── pages/
 │       ├── Home.jsx             # 🏠 Daily snapshot dashboard
 │       ├── NewsTracker.jsx      # 📰 32-country news feeds
-│       ├── JobHunter.jsx        # 💼 German job search
 │       ├── LanguagePlanner.jsx  # 📚 Anki-style SRS learning tracker
-│       ├── CVBuilder.jsx        # 📄 Lebenslauf builder
 │       ├── LiveRadio.jsx        # 📻 World radio map
-│       ├── FootballToday.jsx    # ⚽ Live scores & feeds
-│       └── FinanceWatch.jsx     # 💹 FX rates & crypto prices
+│       └── FootballToday.jsx    # ⚽ Live scores & feeds
 └── vercel.json
 ```
 
