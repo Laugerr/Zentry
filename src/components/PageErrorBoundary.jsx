@@ -27,7 +27,7 @@ export default class PageErrorBoundary extends Component {
         <div className="card" style={{ maxWidth: 480, textAlign: 'center', padding: '2rem 1.5rem' }}>
           <div style={{
             width: 56, height: 56, borderRadius: 14,
-            background: 'rgba(248,113,113,0.12)', color: '#f87171',
+            background: 'var(--danger-soft)', color: 'var(--danger)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: '1rem',
           }}>

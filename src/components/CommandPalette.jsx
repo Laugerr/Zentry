@@ -97,12 +97,12 @@ export default function CommandPalette({ open, onClose }) {
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 500 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', backdropFilter: 'blur(4px)', zIndex: 500 }} />
       <div style={{
         position: 'fixed', top: '15vh', left: '50%', transform: 'translateX(-50%)',
         width: 'min(560px, 92vw)', zIndex: 501,
-        background: 'var(--bg-secondary)', border: '1px solid rgba(167,139,250,0.25)',
-        borderRadius: 14, boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(139,92,246,0.15)',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-accent)',
+        borderRadius: 14, boxShadow: 'var(--shadow-pop), 0 0 40px var(--glow-purple)',
         overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh',
       }}>
         {/* Search row */}
@@ -151,16 +151,16 @@ export default function CommandPalette({ open, onClose }) {
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
                         textAlign: 'left', padding: '0.55rem 0.85rem', borderRadius: 8,
-                        background: active ? 'rgba(139,92,246,0.15)' : 'transparent',
-                        border: '1px solid ' + (active ? 'rgba(139,92,246,0.3)' : 'transparent'),
-                        color: active ? '#fff' : 'var(--text-secondary)',
+                        background: active ? 'var(--accent-soft)' : 'transparent',
+                        border: '1px solid ' + (active ? 'var(--border-accent)' : 'transparent'),
+                        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                         cursor: 'pointer', transition: 'background 0.1s',
                       }}>
                       <span style={{
                         width: 30, height: 30, borderRadius: 7, flexShrink: 0,
-                        background: active ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)',
+                        background: active ? 'var(--accent-soft)' : 'var(--input-bg)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: active ? '#a78bfa' : 'var(--text-secondary)',
+                        color: active ? 'var(--accent-text)' : 'var(--text-secondary)',
                       }}>
                         <Icon size={14} strokeWidth={1.8} />
                       </span>
@@ -168,7 +168,7 @@ export default function CommandPalette({ open, onClose }) {
                         <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{cmd.label}</div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.05rem' }}>{cmd.hint}</div>
                       </div>
-                      <ArrowRight size={12} style={{ color: active ? '#a78bfa' : 'var(--text-muted)', flexShrink: 0, opacity: active ? 1 : 0.4 }} />
+                      <ArrowRight size={12} style={{ color: active ? 'var(--accent-text)' : 'var(--text-muted)', flexShrink: 0, opacity: active ? 1 : 0.4 }} />
                     </button>
                   )
                 })}
@@ -178,7 +178,7 @@ export default function CommandPalette({ open, onClose }) {
         </div>
 
         {/* Footer hints */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.55rem 1rem', borderTop: '1px solid var(--border)', fontSize: '0.68rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.55rem 1rem', borderTop: '1px solid var(--border)', fontSize: '0.68rem', color: 'var(--text-muted)', background: 'var(--input-bg)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
             <kbd style={kbdStyle}><ArrowUp size={9} /></kbd>
             <kbd style={kbdStyle}><ArrowDown size={9} /></kbd>
@@ -200,7 +200,7 @@ export default function CommandPalette({ open, onClose }) {
 const kbdStyle = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   minWidth: 18, height: 18, padding: '0 4px',
-  background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+  background: 'var(--input-bg-hover)', border: '1px solid var(--border)',
   borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem',
   fontWeight: 600, color: 'var(--text-secondary)',
 }

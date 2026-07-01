@@ -7,7 +7,7 @@ import { AlertCircle, RefreshCw, Inbox } from 'lucide-react'
 export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
   return (
     <div style={wrap}>
-      <div style={{ ...iconBadge, background: 'rgba(139,92,246,0.12)', color: '#a78bfa' }}>
+      <div style={{ ...iconBadge, background: 'var(--accent-soft)', color: 'var(--accent-text)' }}>
         <Icon size={24} strokeWidth={1.8} />
       </div>
       <div style={titleStyle}>{title}</div>
@@ -20,7 +20,7 @@ export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
 export function InlineError({ message = 'Something went wrong.', onRetry }) {
   return (
     <div style={wrap} role="alert">
-      <div style={{ ...iconBadge, background: 'rgba(248,113,113,0.12)', color: '#f87171' }}>
+      <div style={{ ...iconBadge, background: 'var(--danger-soft)', color: 'var(--danger)' }}>
         <AlertCircle size={24} strokeWidth={1.8} />
       </div>
       <div style={titleStyle}>Couldn’t load this</div>
