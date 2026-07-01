@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home as HomeIcon, Briefcase, BookOpen, Newspaper, FileText, Menu, X, Radio, Trophy, DollarSign, Search, Command, Sun, Moon, WifiOff } from 'lucide-react'
+import { Home as HomeIcon, BookOpen, Newspaper, Menu, X, Radio, Trophy, Search, Command, Sun, Moon, WifiOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
 import { useOnline } from '../hooks/useOnline'
@@ -8,12 +8,9 @@ import { useWeather, WMO_ICON } from '../hooks/useWeather'
 const NAV_ITEMS = [
   { path: '/home',     icon: HomeIcon,   label: 'Home',             description: 'Your daily snapshot' },
   { path: '/news',     icon: Newspaper,  label: 'News Tracker',     description: 'Live global & local RSS feeds' },
-  { path: '/jobs',     icon: Briefcase,  label: 'Job Hunter',       description: 'Search German job listings' },
   { path: '/language', icon: BookOpen,   label: 'Language Planner', description: 'Weekly language learning tracker' },
-  { path: '/cv',       icon: FileText,   label: 'CV Builder',       description: 'Build and export your Lebenslauf' },
   { path: '/radio',    icon: Radio,      label: 'Live Radio',       description: 'World map of live radio stations' },
   { path: '/football', icon: Trophy,     label: 'Football Today',   description: "Today's scores & fixtures" },
-  { path: '/finance',  icon: DollarSign, label: 'Finance Watch',    description: 'FX rates & crypto prices' },
 ]
 
 const THEME_KEY = 'zentry:theme'

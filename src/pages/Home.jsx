@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Newspaper, Radio, Trophy, BookOpen, Briefcase, FileText, DollarSign,
+  Newspaper, Radio, Trophy, BookOpen,
   ArrowRight, ExternalLink, Flame, MapPin, TrendingUp, TrendingDown,
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
@@ -593,10 +593,10 @@ function LanguagePanel() {
 // ─── Typewriter ───────────────────────────────────────────────────────────────
 function QuickActionsPanel() {
   const tools = [
-    { to: '/news', icon: Newspaper, label: 'News', accent: '#a78bfa' },
-    { to: '/jobs', icon: Briefcase, label: 'Jobs', accent: '#60a5fa' },
-    { to: '/cv', icon: FileText, label: 'CV', accent: '#f472b6' },
-    { to: '/finance', icon: DollarSign, label: 'Markets', accent: '#34d399' },
+    { to: '/news',     icon: Newspaper, label: 'News',     accent: '#a78bfa' },
+    { to: '/radio',    icon: Radio,     label: 'Radio',    accent: '#60a5fa' },
+    { to: '/football', icon: Trophy,    label: 'Football', accent: '#34d399' },
+    { to: '/language', icon: BookOpen,  label: 'Language', accent: '#f472b6' },
   ]
 
   return (

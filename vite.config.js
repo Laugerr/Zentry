@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'Zentry — Personal Life Dashboard',
         short_name: 'Zentry',
-        description: 'Live news, jobs, language planner, CV builder, radio, football & finance — one dashboard.',
+        description: 'Live news, world radio, football scores & a language planner — one dashboard.',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
@@ -115,18 +115,4 @@ export default defineConfig({
     }),
   ],
   base: '/',
-  server: {
-    proxy: {
-      '/api/jobs': {
-        target: 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs',
-        changeOrigin: true,
-        rewrite: () => '',
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('X-API-Key', 'jobboerse-jobsuche')
-          })
-        },
-      },
-    },
-  },
 })

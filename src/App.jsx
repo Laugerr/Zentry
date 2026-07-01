@@ -8,12 +8,9 @@ import PageErrorBoundary from './components/PageErrorBoundary'
 // critical path unless the user actually opens Live Radio.
 const Home           = lazy(() => import('./pages/Home'))
 const NewsTracker    = lazy(() => import('./pages/NewsTracker'))
-const JobHunter      = lazy(() => import('./pages/JobHunter'))
 const LanguagePlanner= lazy(() => import('./pages/LanguagePlanner'))
-const CVBuilder      = lazy(() => import('./pages/CVBuilder'))
 const LiveRadio      = lazy(() => import('./pages/LiveRadio'))
 const FootballToday  = lazy(() => import('./pages/FootballToday'))
-const FinanceWatch   = lazy(() => import('./pages/FinanceWatch'))
 
 function PageFallback() {
   return (
@@ -45,12 +42,9 @@ export default function App() {
           <Route index element={<Navigate to="/home" replace />} />
           <Route path="home"     element={<Page><Home /></Page>} />
           <Route path="news"     element={<Page><NewsTracker /></Page>} />
-          <Route path="jobs"     element={<Page><JobHunter /></Page>} />
           <Route path="language" element={<Page><LanguagePlanner /></Page>} />
-          <Route path="cv"       element={<Page><CVBuilder /></Page>} />
           <Route path="radio"    element={<Page><LiveRadio /></Page>} />
           <Route path="football" element={<Page><FootballToday /></Page>} />
-          <Route path="finance"  element={<Page><FinanceWatch /></Page>} />
         </Route>
       </Routes>
     </HashRouter>

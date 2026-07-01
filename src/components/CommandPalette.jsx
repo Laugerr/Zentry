@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Home as HomeIcon, Newspaper, Briefcase, BookOpen, FileText, Radio, Trophy, DollarSign,
+  Search, Home as HomeIcon, Newspaper, BookOpen, Radio, Trophy,
   ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, Command,
 } from 'lucide-react'
 
@@ -11,12 +11,9 @@ const COMMANDS = [
   // Tools
   { id: 'tool-home',     group: 'Tools', icon: HomeIcon,  label: 'Home',             hint: 'Daily dashboard',                 path: '/home',     keywords: 'overview dashboard start' },
   { id: 'tool-news',     group: 'Tools', icon: Newspaper, label: 'News Tracker',     hint: 'Live RSS feeds',                  path: '/news',     keywords: 'headlines articles rss' },
-  { id: 'tool-jobs',     group: 'Tools', icon: Briefcase, label: 'Job Hunter',       hint: 'German job listings',             path: '/jobs',     keywords: 'work career employment bundesagentur' },
   { id: 'tool-language', group: 'Tools', icon: BookOpen,  label: 'Language Planner', hint: 'Weekly learning tracker',         path: '/language', keywords: 'learn study vocabulary' },
-  { id: 'tool-cv',       group: 'Tools', icon: FileText,  label: 'CV Builder',       hint: 'Build your Lebenslauf',           path: '/cv',       keywords: 'resume lebenslauf pdf' },
   { id: 'tool-radio',    group: 'Tools', icon: Radio,     label: 'Live Radio',       hint: 'World radio map',                 path: '/radio',    keywords: 'stream music station listen' },
   { id: 'tool-football', group: 'Tools', icon: Trophy,    label: 'Football Today',   hint: 'Scores & fixtures',               path: '/football', keywords: 'soccer matches premier league scores' },
-  { id: 'tool-finance',  group: 'Tools', icon: DollarSign,label: 'Finance Watch',    hint: 'FX rates & crypto',               path: '/finance',  keywords: 'money stocks currency bitcoin ethereum crypto forex' },
 
   // Quick actions — open a tool with a specific intent (fragment hints post-navigate)
   { id: 'a-bookmarks',   group: 'Actions', icon: Newspaper, label: 'Open News bookmarks', hint: 'Saved articles', path: '/news',    keywords: 'saved star favourite' },
