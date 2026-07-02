@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
 import {
   Play, Pause, Square, Volume2, VolumeX, Radio, Loader, AlertCircle,
@@ -466,7 +467,7 @@ export default function LiveRadio() {
   const [active,     setActive]     = useState(null)
   const [zoom,       setZoom]       = useState(1)
   const [center,     setCenter]     = useState([0, 20])
-  const [isMobile,   setIsMobile]   = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const { isMobile } = useBreakpoint()
   const [showGenre,  setShowGenre]  = useState(false)
   const [showCountry,setShowCountry]= useState(false)
   const [showList,   setShowList]   = useState(true)
@@ -485,13 +486,6 @@ export default function LiveRadio() {
   useEffect(() => { writeJSON(LS.favs, favourites) }, [favourites])
   useEffect(() => { writeJSON(LS.recents, recents) }, [recents])
   useEffect(() => { if (active) writeJSON(LS.last, active) }, [active])
-
-  // Responsive — on mobile we keep the list open (it's the primary surface now).
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   // Observe theme so the map palette follows dark/light mode without a reload.
   const [theme, setTheme] = useState(() => typeof document !== 'undefined'

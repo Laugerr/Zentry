@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
 import { useOnline } from '../hooks/useOnline'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const NAV_ITEMS = [
   { path: '/home',     icon: HomeIcon,   label: 'Home',             description: 'Your daily snapshot' },
@@ -31,10 +32,25 @@ function formatTime(date) {
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
+// The clock ticks every second — keep that state in its own tiny component so
+// the tick re-renders only these two spans, not the whole layout.
+function Clock({ showDate }) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+      {showDate && <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>{formatDate(now)}</span>}
+      <span style={{ color: 'var(--accent-text)', fontWeight: 600 }}>{formatTime(now)}</span>
+    </div>
+  )
+}
+
 export default function Layout() {
   const location  = useLocation()
-  const [now, setNow]               = useState(new Date())
-  const [isMobile, setIsMobile]     = useState(window.innerWidth < 768)
+  const { isMobile }                = useBreakpoint()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [theme, setTheme]           = useState(readTheme)
@@ -58,24 +74,9 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Close the drawer on navigation (mobile nav tap) and when growing past mobile
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(id)
-  }, [])
-
-  useEffect(() => {
-    const onResize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      if (!mobile) setSidebarOpen(false)
-    }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-
-  // Close sidebar when route changes (mobile nav tap)
-  useEffect(() => {
-    if (isMobile) setSidebarOpen(false)
+    setSidebarOpen(false)
   }, [location.pathname, isMobile])
 
   // Prevent body scroll when drawer is open
@@ -124,7 +125,7 @@ export default function Layout() {
           onClick={() => setSidebarOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 99,
-            background: 'rgba(0,0,0,0.55)',
+            background: 'var(--backdrop)',
             backdropFilter: 'blur(2px)',
           }}
         />
@@ -240,18 +241,18 @@ export default function Layout() {
               aria-label="Open command palette"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+                background: 'var(--input-bg)', border: '1px solid var(--border)',
                 borderRadius: 6, padding: isMobile ? '0.3rem 0.45rem' : '0.25rem 0.55rem',
                 color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.7rem',
                 fontFamily: "'Inter', sans-serif", transition: 'all 0.15s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--text-primary)' }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}
             >
               <Search size={12} />
               {!isMobile && <>
                 <span>Search</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 5px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 3, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem', fontWeight: 600 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 5px', background: 'var(--input-bg-hover)', border: '1px solid var(--border)', borderRadius: 3, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem', fontWeight: 600 }}>
                   <Command size={9} />K
                 </span>
               </>}
@@ -259,18 +260,15 @@ export default function Layout() {
 
             {/* Weather pill */}
             {weather && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.2rem 0.55rem', whiteSpace: 'nowrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.2rem 0.55rem', whiteSpace: 'nowrap' }}>
                 <span>{weather.icon}</span>
-                <span style={{ color: '#7dd3fc', fontWeight: 600 }}>{weather.temp}°C</span>
+                <span style={{ color: 'var(--info)', fontWeight: 600 }}>{weather.temp}°C</span>
                 {!isMobile && weather.city && <span style={{ opacity: 0.6 }}>{weather.city}</span>}
               </div>
             )}
 
             {/* Clock */}
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-              {!isMobile && <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>{formatDate(now)}</span>}
-              <span style={{ color: '#a78bfa', fontWeight: 600 }}>{formatTime(now)}</span>
-            </div>
+            <Clock showDate={!isMobile} />
           </div>
         </header>
 
@@ -282,8 +280,8 @@ export default function Layout() {
             style={{
               flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: '0.5rem', padding: '0.4rem 1rem',
-              background: 'rgba(249,115,22,0.12)', borderBottom: '1px solid rgba(249,115,22,0.3)',
-              color: '#fb923c', fontSize: '0.72rem', fontWeight: 600,
+              background: 'var(--orange-soft)', borderBottom: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)',
+              color: 'var(--orange)', fontSize: '0.72rem', fontWeight: 600,
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >

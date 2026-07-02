@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import {
   RefreshCw, ExternalLink, Globe, Newspaper, ChevronDown, Clock,
   Search, Bookmark, LayoutGrid, Rows, List as ListIcon, X, TrendingUp, Check,
@@ -724,7 +725,7 @@ export default function NewsTracker() {
   const [bookmarks, setBookmarks] = useState(() => readJSON(LS.bookmarks, []))
   const [readMap,   setReadMap]   = useState(() => readJSON(LS.read, {}))
   const [showBookmarks, setShowBookmarks] = useState(false)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const { isMobile } = useBreakpoint()
   const locationDetected = useRef(!!saved.country) // don't overwrite persisted country on reload
   const [cacheTick, setCacheTick] = useState(0)
 
@@ -735,13 +736,6 @@ export default function NewsTracker() {
   useEffect(() => { writeJSON(LS.prefs, { view, country, category, layout }) }, [view, country, category, layout])
   useEffect(() => { writeJSON(LS.bookmarks, bookmarks) }, [bookmarks])
   useEffect(() => { writeJSON(LS.read, readMap) }, [readMap])
-
-  // Responsive
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   // Close country picker on outside click
   useEffect(() => {

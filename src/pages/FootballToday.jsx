@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import {
   RefreshCw, MapPin, Clock, ExternalLink, Newspaper,
   Search, Star, ChevronDown, ChevronLeft, ChevronRight, Trophy,
@@ -636,15 +637,9 @@ export default function FootballToday() {
   const [lastFetch,  setLastFetch]  = useState(null)
   const [now,        setNow]        = useState(() => Date.now())
   const [favs,       setFavs]       = useState(() => loadFavs())
-  const [isMobile,   setIsMobile]   = useState(typeof window !== 'undefined' ? window.innerWidth < 900 : false)
+  // Fixtures + table sit side by side only on desktop; tablets stack them too.
+  const isMobile = !useBreakpoint().isDesktop
   const tabBarRef = useRef(null)
-
-  // Resize
-  useEffect(() => {
-    const fn = () => setIsMobile(window.innerWidth < 900)
-    window.addEventListener('resize', fn)
-    return () => window.removeEventListener('resize', fn)
-  }, [])
 
   // Tick for refresh countdown
   useEffect(() => {
