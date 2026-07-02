@@ -1,4 +1,5 @@
 import { AlertCircle, RefreshCw, Inbox } from 'lucide-react'
+import { Button } from './ui'
 
 // Shared presentation for the "no data" and "fetch failed" states.
 // Every tool rolls its own fetch logic; these give them one consistent look
@@ -26,13 +27,9 @@ export function InlineError({ message = 'Something went wrong.', onRetry }) {
       <div style={titleStyle}>Couldn’t load this</div>
       <div style={hintStyle}>{message}</div>
       {onRetry && (
-        <button
-          className="btn-ghost"
-          onClick={onRetry}
-          style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-        >
-          <RefreshCw size={12} /> Retry
-        </button>
+        <Button icon={RefreshCw} size="sm" onClick={onRetry} style={{ marginTop: '1rem' }}>
+          Retry
+        </Button>
       )}
     </div>
   )

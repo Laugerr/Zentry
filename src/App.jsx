@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-d
 import { lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 import PageErrorBoundary from './components/PageErrorBoundary'
+import { ToastProvider } from './components/ui'
 
 // Lazy-load each tool so the initial bundle only ships what's visible on first paint.
 // react-simple-maps + the topojson atlas are heavy — splitting keeps that out of the
@@ -36,17 +37,19 @@ function Page({ children }) {
 // To add a new tool: import it here and add a <Route> + a nav entry in Layout.jsx.
 export default function App() {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/home" replace />} />
-          <Route path="home"     element={<Page><Home /></Page>} />
-          <Route path="news"     element={<Page><NewsTracker /></Page>} />
-          <Route path="language" element={<Page><LanguagePlanner /></Page>} />
-          <Route path="radio"    element={<Page><LiveRadio /></Page>} />
-          <Route path="football" element={<Page><FootballToday /></Page>} />
-        </Route>
-      </Routes>
-    </HashRouter>
+    <ToastProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/home" replace />} />
+            <Route path="home"     element={<Page><Home /></Page>} />
+            <Route path="news"     element={<Page><NewsTracker /></Page>} />
+            <Route path="language" element={<Page><LanguagePlanner /></Page>} />
+            <Route path="radio"    element={<Page><LiveRadio /></Page>} />
+            <Route path="football" element={<Page><FootballToday /></Page>} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </ToastProvider>
   )
 }
