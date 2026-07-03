@@ -804,6 +804,85 @@
   @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 }
 
+/* ── App shell (Layout.jsx) ─────────────────────────────────────────────── */
+@layer components {
+  /* Phone bottom tab bar */
+  .bottom-nav {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border-top: 1px solid var(--border);
+    background: var(--header-bg);
+    backdrop-filter: blur(12px);
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease;
+  }
+  .bottom-nav-item svg { transition: transform 0.15s ease; }
+  .bottom-nav-item:active svg { transform: scale(0.9); }
+  .bottom-nav-item.active { color: var(--accent-text); font-weight: 600; }
+  .bottom-nav-item:focus-visible { outline-offset: -4px; }
+
+  /* Header ⌘K hint inside the Search button */
+  .kbd-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 5px;
+    background: var(--input-bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-muted);
+  }
+
+  /* Tablet icon rail */
+  .nav-item-icon {
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0 auto;
+  }
+
+  /* Rows in the More sheet */
+  .more-item { min-height: 52px; font-size: 0.9rem; }
+  .more-item-hint {
+    display: block;
+    margin-top: 1px;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Height of the phone tab bar — also lifts toasts above it */
+@media (max-width: 767px) {
+  :root { --bottom-nav-h: 56px; }
+}
+
 /* Respect users who ask for less motion (vestibular comfort). The app has
    several animations — page transitions, the hero glow, the markets ticker,
    the SRS card flip and spinners — so we neutralise them wholesale rather
