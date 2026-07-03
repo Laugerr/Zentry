@@ -331,8 +331,10 @@ function HeadlinesPanel() {
               }}
             >
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 55%)' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.3rem 0.4rem', fontSize: '0.75rem', fontWeight: 600, color: '#fff', lineHeight: 1.25, textAlign: 'left', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {it.title}
+              {/* Clamp on the inner span — clamping the padded box lets a
+                  third line peek through the padding */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.3rem 0.4rem', fontSize: '0.75rem', fontWeight: 600, color: '#fff', lineHeight: 1.25, textAlign: 'left' }}>
+                <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.title}</span>
               </div>
             </button>
           )
