@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Newspaper, Radio, Trophy, BookOpen,
-  ArrowRight, ExternalLink, Flame, MapPin, TrendingUp, TrendingDown,
+  ArrowRight, Flame, MapPin,
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
+import { Card, Skeleton } from '../components/ui'
 import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
 
@@ -29,39 +30,33 @@ const WMO_LABEL = {
 }
 
 // ─── Tiny primitives ──────────────────────────────────────────────────────────
-function SectionHead({ icon: Icon, accent = '#a78bfa', label, to, action }) {
+function SectionHead({ icon: Icon, accent = 'var(--accent-text)', label, to, action }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
         <span style={{
           width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-          background: `${accent}22`, color: accent,
+          background: `color-mix(in srgb, ${accent} 14%, transparent)`, color: accent,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Icon size={13} strokeWidth={2} />
         </span>
         <span style={{
-          fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: 700,
-          color: 'var(--text-secondary)', letterSpacing: '0.12em', textTransform: 'uppercase',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700,
+          color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>{label}</span>
       </div>
       {to && (
-        <Link to={to} style={{
-          fontSize: '0.65rem', color: 'var(--text-muted)', textDecoration: 'none',
-          display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap',
-        }}>
-          {action ?? 'Open'} <ArrowRight size={10} />
+        <Link to={to} className="home-more-link">
+          {action ?? 'Open'} <ArrowRight size={12} />
         </Link>
       )}
     </div>
   )
 }
 
-function Skeleton({ h = 14, w = '100%', r = 4 }) {
-  return <div style={{ height: h, width: w, borderRadius: r, background: 'var(--input-bg-hover)', animation: 'home-pulse 1.4s ease-in-out infinite' }} />
-}
-
-const panelStyle = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.1rem 1.2rem' }
+// Every Home panel is a <Card padding="none" className="home-panel"> (padding
+// and radius live in index.css so phones can tighten them).
 
 // ─── Weather (lives inside hero) ──────────────────────────────────────────────
 function HeroWeather() {
@@ -81,8 +76,8 @@ function HeroWeather() {
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
       <div style={{
         width: 56, height: 56, borderRadius: 14,
-        background: 'linear-gradient(135deg, rgba(125,211,252,0.18), rgba(167,139,250,0.18))',
-        border: '1px solid rgba(125,211,252,0.25)',
+        background: 'linear-gradient(135deg, var(--info-soft), var(--accent-soft))',
+        border: '1px solid color-mix(in srgb, var(--info) 25%, transparent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '1.9rem', flexShrink: 0,
       }}>{WMO_ICON[data.code] ?? '🌡️'}</div>
@@ -95,11 +90,11 @@ function HeroWeather() {
             {WMO_LABEL[data.code] ?? '—'}
           </span>
         </div>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-          {data.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><MapPin size={10} /> {data.city}</span>}
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {data.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><MapPin size={11} /> {data.city}</span>}
           <span>H {data.hi}° · L {data.lo}°</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Wind size={10} /> {data.wind}</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Droplets size={10} /> {data.humidity}%</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Wind size={11} /> {data.wind}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Droplets size={11} /> {data.humidity}%</span>
         </div>
       </div>
     </div>
@@ -153,18 +148,19 @@ const fetchHeadlines = async ({ signal }) => {
   }))
 }
 
-// Per-article accent palette — used for card background + colour identity
+// Per-article accent — `bg` stands in for a missing photo (always dark, under
+// white text like an image); `color` tints the progress bar + active thumbnail.
 const CARD_ACCENTS = [
-  { bg: 'linear-gradient(145deg, #110d2e 0%, #1a1240 100%)', color: '#a78bfa' },
-  { bg: 'linear-gradient(145deg, #0c1929 0%, #0f2238 100%)', color: '#60a5fa' },
-  { bg: 'linear-gradient(145deg, #1f0a1a 0%, #2d1028 100%)', color: '#f472b6' },
-  { bg: 'linear-gradient(145deg, #091a14 0%, #0e2a1e 100%)', color: '#34d399' },
-  { bg: 'linear-gradient(145deg, #1c1206 0%, #281c0a 100%)', color: '#fbbf24' },
-  { bg: 'linear-gradient(145deg, #1a0c0c 0%, #280f0f 100%)', color: '#f87171' },
-  { bg: 'linear-gradient(145deg, #0f1a1a 0%, #142626 100%)', color: '#2dd4bf' },
-  { bg: 'linear-gradient(145deg, #1a1208 0%, #231a0d 100%)', color: '#fb923c' },
-  { bg: 'linear-gradient(145deg, #121230 0%, #1a1a40 100%)', color: '#818cf8' },
-  { bg: 'linear-gradient(145deg, #0f1f10 0%, #152a16 100%)', color: '#4ade80' },
+  { bg: 'linear-gradient(145deg, #110d2e 0%, #1a1240 100%)', color: 'var(--accent-text)' },
+  { bg: 'linear-gradient(145deg, #0c1929 0%, #0f2238 100%)', color: 'var(--info)' },
+  { bg: 'linear-gradient(145deg, #1f0a1a 0%, #2d1028 100%)', color: 'var(--pink)' },
+  { bg: 'linear-gradient(145deg, #091a14 0%, #0e2a1e 100%)', color: 'var(--success)' },
+  { bg: 'linear-gradient(145deg, #1c1206 0%, #281c0a 100%)', color: 'var(--warning)' },
+  { bg: 'linear-gradient(145deg, #1a0c0c 0%, #280f0f 100%)', color: 'var(--danger)' },
+  { bg: 'linear-gradient(145deg, #0f1a1a 0%, #142626 100%)', color: 'var(--info)' },
+  { bg: 'linear-gradient(145deg, #1a1208 0%, #231a0d 100%)', color: 'var(--orange)' },
+  { bg: 'linear-gradient(145deg, #121230 0%, #1a1a40 100%)', color: 'var(--accent-text)' },
+  { bg: 'linear-gradient(145deg, #0f1f10 0%, #152a16 100%)', color: 'var(--success)' },
 ]
 
 function HeadlinesPanel() {
@@ -173,6 +169,7 @@ function HeadlinesPanel() {
   const [progress, setProgress]   = useState(0)
   const trackRef   = useRef(null)
   const animRef    = useRef(false)  // prevent overlapping slides
+  const thumbsRef  = useRef(null)
 
   const ANIM_MS = 440
 
@@ -208,7 +205,17 @@ function HeadlinesPanel() {
     return () => clearInterval(id)
   }, [items, activeIdx, slide])
 
-  if (loading && !items) return <section style={{ ...panelStyle, padding: 0, height: 440, animation: 'home-pulse 1.4s ease-in-out infinite' }} />
+  // Phones: the thumbnails are a swipeable strip — centre it on the active
+  // one. The active thumb always sits in the middle slot, so once centred it
+  // stays centred as the carousel advances. No-op when the strip doesn't scroll.
+  useEffect(() => {
+    const strip = thumbsRef.current
+    const tile  = strip?.children[2]
+    if (!tile || strip.scrollWidth <= strip.clientWidth) return
+    strip.scrollLeft = tile.offsetLeft - (strip.clientWidth - tile.clientWidth) / 2
+  }, [items])
+
+  if (loading && !items) return <Skeleton h={440} r={14} />
   if ((error && !items) || !items?.length) return null
 
   const len     = items.length
@@ -221,17 +228,17 @@ function HeadlinesPanel() {
   const trackItems = [items[prevIdx], items[activeIdx], items[nextIdx]]
 
   return (
-    <section style={{ ...panelStyle, padding: 0, overflow: 'hidden' }}>
+    <Card as="section" padding="none" className="home-panel home-panel-flush">
 
       {/* Header */}
       <div style={{ padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
           <Newspaper size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Top Headlines</span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6rem', color: 'var(--text-muted)' }}>{activeIdx + 1} / {len}</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Top Headlines</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: 'var(--text-muted)' }}>{activeIdx + 1} / {len}</span>
         </div>
-        <Link to="/news" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
-          More news <ArrowRight size={10} />
+        <Link to="/news" className="home-more-link">
+          More news <ArrowRight size={12} />
         </Link>
       </div>
 
@@ -241,7 +248,7 @@ function HeadlinesPanel() {
       </div>
 
       {/* Image area */}
-      <div style={{ position: 'relative', overflow: 'hidden', height: 280 }}>
+      <div className="hl-image">
 
         {/* Film strip — 3 images wide, slides as one unit */}
         <div
@@ -283,7 +290,7 @@ function HeadlinesPanel() {
           }}
         >
           {active.pubDate && (
-            <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.5)', fontFamily: "'JetBrains Mono', monospace", marginBottom: 5, letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', monospace", marginBottom: 5, letterSpacing: '0.04em' }}>
               {timeAgo(active.pubDate)}
             </div>
           )}
@@ -293,8 +300,8 @@ function HeadlinesPanel() {
         </a>
       </div>
 
-      {/* 5 square thumbnails — static, only highlight changes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem', padding: '0.5rem 0.6rem' }}>
+      {/* 5 thumbnails — a row on desktop, a swipeable strip on phones */}
+      <div ref={thumbsRef} className="hl-thumbs">
         {[
           (activeIdx - 2 + len) % len,
           prevIdx,
@@ -314,25 +321,24 @@ function HeadlinesPanel() {
                 else window.open(it.link, '_blank', 'noopener')
               }}
               title={it.title}
+              aria-label={isCurr ? `Open: ${it.title}` : `Show: ${it.title}`}
+              className="hl-thumb"
               style={{
-                aspectRatio: '1 / 1',
-                borderRadius: 6, overflow: 'hidden', position: 'relative',
-                padding: 0, cursor: 'pointer', outline: 'none',
                 background: it.image ? `url(${it.image}) center/cover no-repeat` : ac.bg,
-                border: isCurr ? `2px solid ${accent.color}` : '2px solid rgba(255,255,255,0.08)',
-                opacity: isCurr ? 1 : Math.abs(offset) === 1 ? 0.55 : 0.3,
+                border: isCurr ? `2px solid ${accent.color}` : '2px solid var(--border)',
+                opacity: isCurr ? 1 : Math.abs(offset) === 1 ? 0.7 : 0.5,
                 transition: 'opacity 0.3s ease, border-color 0.3s ease',
               }}
             >
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 55%)' }} />
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.25rem 0.3rem', fontSize: '0.52rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.3rem 0.4rem', fontSize: '0.75rem', fontWeight: 600, color: '#fff', lineHeight: 1.25, textAlign: 'left', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {it.title}
               </div>
             </button>
           )
         })}
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -378,19 +384,19 @@ function FootballPanel() {
     return same ? `Today · ${time}` : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ` · ${time}`
   }
   return (
-    <section style={panelStyle}>
-      <SectionHead icon={Trophy} accent="#34d399" label="Football" to="/football" action="All matches" />
+    <Card as="section" padding="none" className="home-panel">
+      <SectionHead icon={Trophy} accent="var(--success)" label="Football" to="/football" action="All matches" />
       {loading && !m && <div style={{ display: 'grid', gap: 10 }}><Skeleton h={12} w="40%" /><Skeleton h={36} /></div>}
       {!loading && !m && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{error ? "Couldn't load matches." : 'No matches today.'}</div>}
       {m && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)', marginBottom: '0.7rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.7rem' }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{m.league}</span>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
-              color: m.status === 'in' ? '#ef4444' : m.status === 'post' ? 'var(--text-muted)' : '#a78bfa',
+              color: m.status === 'in' ? 'var(--danger)' : m.status === 'post' ? 'var(--text-muted)' : 'var(--accent-text)',
             }}>
-              {m.status === 'in' && <span style={{ width: 6, height: 6, borderRadius: 999, background: '#ef4444', animation: 'home-pulse 1.4s ease-in-out infinite' }} />}
+              {m.status === 'in' && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--danger)', animation: 'home-pulse 1.4s ease-in-out infinite' }} />}
               {m.status === 'in' ? `LIVE · ${m.statusDetail}` : m.status === 'post' ? 'FT' : kickoffLabel(m.date)}
             </span>
           </div>
@@ -409,84 +415,7 @@ function FootballPanel() {
           </div>
         </div>
       )}
-    </section>
-  )
-}
-
-// ─── Markets ticker ───────────────────────────────────────────────────────────
-const fetchFinance = async ({ signal }) => {
-  const r = await fetch(
-    'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false',
-    { signal }
-  )
-  if (!r.ok) throw new Error('coingecko')
-  return r.json() // array of { id, symbol, name, current_price, price_change_percentage_24h }
-}
-
-function MarketsStrip() {
-  const { data, error, loading } = useCachedFetch('home:markets', fetchFinance, { ttl: 2 * 60_000 })
-
-  // Loading state — pulse bar at same height as the real ticker
-  if (loading && !data) {
-    return (
-      <div style={{ ...panelStyle, padding: 0, height: 44, animation: 'home-pulse 1.4s ease-in-out infinite', borderRadius: 12 }} />
-    )
-  }
-  if ((error && !data) || !data?.length) return null
-
-  // Duplicate the list so the second copy seamlessly replaces the first
-  const items = [...data, ...data]
-
-  return (
-    <section style={{ ...panelStyle, padding: 0, display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative', height: 44 }}>
-
-      {/* Fixed "MARKETS" pill on the left */}
-      <div style={{
-        flexShrink: 0, zIndex: 2, height: '100%',
-        display: 'flex', alignItems: 'center',
-        padding: '0 1rem',
-        borderRight: '1px solid var(--border)',
-        background: 'var(--bg-card)',
-      }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-          MARKETS
-        </span>
-      </div>
-
-      {/* Scrolling track */}
-      <div className="markets-ticker-track">
-        {items.map((coin, idx) => {
-          const ch = coin.price_change_percentage_24h ?? 0
-          const up = ch >= 0
-          const price = coin.current_price
-          return (
-            <span
-              key={coin.id + idx}
-              style={{
-                display: 'inline-flex', alignItems: 'baseline', gap: '0.4rem',
-                padding: '0 1.25rem',
-                borderRight: '1px solid var(--border)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-                {coin.symbol.toUpperCase()}
-              </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                ${price.toLocaleString(undefined, { maximumFractionDigits: price >= 100 ? 0 : price >= 1 ? 2 : 4 })}
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace", color: up ? '#4ade80' : '#f87171' }}>
-                {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                {up ? '+' : ''}{ch.toFixed(2)}%
-              </span>
-            </span>
-          )
-        })}
-      </div>
-
-      {/* Right-edge fade */}
-      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: 'linear-gradient(to left, var(--bg-card), transparent)', pointerEvents: 'none', zIndex: 2 }} />
-    </section>
+    </Card>
   )
 }
 
@@ -495,28 +424,28 @@ function RadioPanel() {
   const last   = readJSON('lr:last:v1', null)
   const recent = readJSON('lr:recents:v1', [])
   return (
-    <section style={panelStyle}>
-      <SectionHead icon={Radio} accent="#f472b6" label="Live Radio" to="/radio" action="Open player" />
+    <Card as="section" padding="none" className="home-panel">
+      <SectionHead icon={Radio} accent="var(--pink)" label="Live Radio" to="/radio" action="Open player" />
       {!last && (
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          No station yet — pick one in <Link to="/radio" style={{ color: 'var(--accent-purple)' }}>Live Radio</Link>.
+          No station yet — pick one in <Link to="/radio" style={{ color: 'var(--accent-text)' }}>Live Radio</Link>.
         </div>
       )}
       {last && (
         <div>
-          <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
             Last played
           </div>
           <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {last.name ?? 'Unknown station'}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
             {[last.countrycode, last.tags?.split(',')[0], last.bitrate ? `${last.bitrate} kbps` : null].filter(Boolean).join(' · ')}
           </div>
           {recent.length > 1 && (
             <ul style={{ listStyle: 'none', display: 'grid', gap: 3, marginTop: '0.7rem', paddingTop: '0.55rem', borderTop: '1px solid var(--border)' }}>
               {recent.slice(1, 3).map((r, i) => (
-                <li key={(r.stationuuid ?? r.name) + i} style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <li key={(r.stationuuid ?? r.name) + i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: 'var(--text-muted)', marginRight: 6 }}>↳</span>{r.name}
                 </li>
               ))}
@@ -524,7 +453,7 @@ function RadioPanel() {
           )}
         </div>
       )}
-    </section>
+    </Card>
   )
 }
 
@@ -553,32 +482,32 @@ function LanguagePanel() {
   const streaks = useMemo(() => readLanguageStreaks(), [])
   const top = streaks[0]
   return (
-    <section style={panelStyle}>
-      <SectionHead icon={BookOpen} accent="#fbbf24" label="Language" to="/language" action="Open planner" />
+    <Card as="section" padding="none" className="home-panel">
+      <SectionHead icon={BookOpen} accent="var(--warning)" label="Language" to="/language" action="Open planner" />
       {!top && (
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          No plans yet — create one in <Link to="/language" style={{ color: 'var(--accent-purple)' }}>Language Planner</Link>.
+          No plans yet — create one in <Link to="/language" style={{ color: 'var(--accent-text)' }}>Language Planner</Link>.
         </div>
       )}
       {top && (
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <span style={{ fontSize: '2rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#fbbf24', lineHeight: 1 }}>
+            <span style={{ fontSize: '2rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--warning)', lineHeight: 1 }}>
               {top.current}
             </span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              day{top.current === 1 ? '' : 's'} · <Flame size={11} style={{ display: 'inline', verticalAlign: -1, color: '#f97316' }} /> {top.lang}
+              day{top.current === 1 ? '' : 's'} · <Flame size={11} style={{ display: 'inline', verticalAlign: -1, color: 'var(--orange)' }} /> {top.lang}
             </span>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>
-            Level <span className="badge badge-purple" style={{ fontSize: '0.55rem', padding: '0.1rem 0.4rem' }}>{top.cefr}</span>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            Level <span className="badge badge-purple" style={{ padding: '0.1rem 0.45rem' }}>{top.cefr}</span>
             &nbsp;· longest {top.longest}d
             {top.lastStudied && <> · last {timeAgo(top.lastStudied + 'T12:00:00')}</>}
           </div>
           {streaks.length > 1 && (
             <div style={{ marginTop: '0.7rem', paddingTop: '0.55rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.7rem', flexWrap: 'wrap' }}>
               {streaks.slice(1, 4).map((s) => (
-                <span key={s.lang} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                <span key={s.lang} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {s.lang} <span style={{ color: 'var(--text-muted)' }}>· {s.current}d</span>
                 </span>
               ))}
@@ -586,22 +515,23 @@ function LanguagePanel() {
           )}
         </div>
       )}
-    </section>
+    </Card>
   )
 }
 
-// ─── Typewriter ───────────────────────────────────────────────────────────────
+// ─── Quick start ───────────────────────────────────────────────────────────────
 function QuickActionsPanel() {
   const tools = [
-    { to: '/news',     icon: Newspaper, label: 'News',     accent: '#a78bfa' },
-    { to: '/radio',    icon: Radio,     label: 'Radio',    accent: '#60a5fa' },
-    { to: '/football', icon: Trophy,    label: 'Football', accent: '#34d399' },
-    { to: '/language', icon: BookOpen,  label: 'Language', accent: '#f472b6' },
+    { to: '/news',     icon: Newspaper, label: 'News',     accent: 'var(--accent-text)' },
+    { to: '/radio',    icon: Radio,     label: 'Radio',    accent: 'var(--info)' },
+    { to: '/football', icon: Trophy,    label: 'Football', accent: 'var(--success)' },
+    { to: '/language', icon: BookOpen,  label: 'Language', accent: 'var(--pink)' },
   ]
 
   return (
-    <section style={panelStyle}>
-      <SectionHead icon={Sparkles} accent="#818cf8" label="Quick Start" />
+    // Hidden on phones — the bottom tab bar already does this job there
+    <Card as="section" padding="none" className="home-panel home-quick">
+      <SectionHead icon={Sparkles} label="Quick Start" />
       <div className="home-action-grid">
         {tools.map(({ to, icon: Icon, label, accent }) => (
           <Link
@@ -616,10 +546,11 @@ function QuickActionsPanel() {
           </Link>
         ))}
       </div>
-    </section>
+    </Card>
   )
 }
 
+// ─── Typewriter ───────────────────────────────────────────────────────────────
 const PHRASES_NIGHT = [
   "get some rest",
   "still up?",
@@ -712,19 +643,9 @@ export default function Home() {
   return (
     <div className="home-shell">
       {/* Hero — greeting + weather inline */}
-      <div
-        className={`hero-tod hero-${period}`}
-        style={{
-          ...panelStyle,
-          position: 'relative', overflow: 'hidden',
-          padding: '1.4rem 1.5rem',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '1.5rem', flexWrap: 'wrap',
-          background: 'linear-gradient(135deg, var(--bg-card), var(--bg-card-hover))',
-        }}
-      >
+      <Card padding="none" className={`home-panel home-hero hero-tod hero-${period}`}>
         <div style={{ minWidth: 0, flex: '1 1 320px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             <Sparkles size={11} /> {dateLabel} · {timeLabel}
           </div>
           <h1 style={{ fontSize: 'clamp(1.8rem, 3.4vw, 2.7rem)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0, margin: 0 }}>
@@ -736,17 +657,15 @@ export default function Home() {
           </div>
         </div>
         <HeroWeather />
-      </div>
+      </Card>
 
-      {/* Markets ticker — full width */}
+      {/* Today — Football | Language (stacked on phones) */}
       <div className="home-today-stack">
         <FootballPanel />
         <LanguagePanel />
       </div>
 
-      <MarketsStrip />
-
-      {/* Main area — Headlines 50% | Football+Radio 25% | Language 25% */}
+      {/* Main area — Headlines | Quick Start + Radio (side by side on tablets) */}
       <div className="home-main-grid">
         <HeadlinesPanel />
         <div className="home-right-col">
@@ -754,84 +673,6 @@ export default function Home() {
           <RadioPanel />
         </div>
       </div>
-
-      <style>{`
-        @keyframes home-pulse { 0%,100% { opacity: 0.45 } 50% { opacity: 0.85 } }
-
-        /* Overlay text fades in on article change */
-        @keyframes hl-text-fade { from { opacity: 0; } to { opacity: 1; } }
-        .hl-text-fade { animation: hl-text-fade 0.35s ease; }
-
-        .home-shell {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          max-width: 1240px;
-          min-width: 0;
-          overflow-x: hidden;
-        }
-
-        .home-today-stack {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 1rem;
-        }
-
-        .home-shell section {
-          min-width: 0;
-          max-width: 100%;
-        }
-
-        .home-main-grid {
-          display: grid; gap: 1rem;
-          grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
-        }
-        .home-right-col { display: flex; flex-direction: column; gap: 1rem; }
-        .home-action-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 0.55rem;
-        }
-        .home-action-tile {
-          min-height: 54px;
-          display: grid;
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 0.55rem;
-          padding: 0.65rem 0.7rem;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          background: rgba(255,255,255,0.025);
-          color: var(--text-secondary);
-          font-size: 0.78rem;
-          font-weight: 700;
-          transition: border-color 0.15s, background 0.15s, color 0.15s;
-        }
-        .home-action-tile:hover {
-          border-color: var(--border-accent);
-          background: rgba(139,92,246,0.08);
-          color: var(--text-primary);
-        }
-        .home-action-icon {
-          width: 28px;
-          height: 28px;
-          border-radius: 7px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--tile-accent);
-          background: rgba(255,255,255,0.04);
-        }
-        .home-action-arrow { color: var(--text-muted); }
-        @media (max-width: 1024px) {
-          .home-main-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 640px) {
-          .home-today-stack { grid-template-columns: 1fr; }
-          .home-main-grid { grid-template-columns: 1fr; }
-          .home-today-stack section { padding: 0.95rem 1rem !important; }
-        }
-      `}</style>
     </div>
   )
 }

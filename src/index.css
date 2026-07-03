@@ -376,24 +376,6 @@
   /* Hero text sits above the glow layer */
   .hero-tod > * { position: relative; z-index: 1; }
 
-  /* Markets scrolling ticker */
-  @keyframes ticker-scroll {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  .markets-ticker-track {
-    display: inline-flex;
-    align-items: center;
-    animation: ticker-scroll 40s linear infinite;
-    will-change: transform;
-  }
-
-  .markets-ticker-track:hover {
-    animation-play-state: paused;
-  }
-
-
   /* Home page pulse animation */
   @keyframes home-pulse {
     0%, 100% { opacity: 0.45; }
@@ -883,8 +865,159 @@
   :root { --bottom-nav-h: 56px; }
 }
 
+/* ── Home page (pages/Home.jsx) ─────────────────────────────────────────── */
+@layer components {
+  .home-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 1240px;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .home-shell section { min-width: 0; max-width: 100%; }
+
+  .home-panel { padding: 1.1rem 1.2rem; border-radius: 14px; }
+  .home-panel-flush { padding: 0; overflow: hidden; }
+  .home-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+  }
+
+  /* "Open →" links in panel headers — padded so they're a real tap target */
+  .home-more-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.4rem 0.3rem;
+    margin: -0.4rem -0.3rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: 6px;
+    transition: color 0.15s ease;
+  }
+  .home-more-link:hover { color: var(--text-primary); }
+
+  /* Layout: desktop = headlines | side column */
+  .home-today-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .home-main-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  }
+  .home-right-col { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* Headlines carousel */
+  @keyframes hl-text-fade { from { opacity: 0; } to { opacity: 1; } }
+  .hl-text-fade { animation: hl-text-fade 0.35s ease; }
+  .hl-image { position: relative; overflow: hidden; height: 280px; }
+  .hl-thumbs {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0.5rem 0.6rem;
+  }
+  .hl-thumb {
+    aspect-ratio: 1 / 1;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    padding: 0;
+    cursor: pointer;
+    transition: opacity 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Quick start tiles */
+  .home-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .home-action-tile {
+    min-height: 54px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .home-action-tile:hover {
+    border-color: var(--border-accent);
+    background: var(--nav-hover);
+    color: var(--text-primary);
+  }
+  .home-action-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tile-accent);
+    background: color-mix(in srgb, var(--tile-accent) 14%, transparent);
+  }
+  .home-action-arrow { color: var(--text-muted); }
+
+  /* Tablets: headlines full width, Quick Start + Radio side by side */
+  @media (max-width: 1023px) {
+    .home-main-grid { grid-template-columns: 1fr; }
+    .home-right-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+
+  /* Phones: one column, tighter padding, swipeable thumbnails, no Quick
+     Start (the bottom tab bar covers it) */
+  @media (max-width: 767px) {
+    .home-today-stack,
+    .home-right-col { grid-template-columns: 1fr; }
+    .home-quick { display: none; }
+    .home-panel { padding: 0.95rem 1rem; }
+    .home-panel-flush { padding: 0; }
+    .home-hero { padding: 1.1rem 1rem; gap: 1rem; }
+    .hl-image { height: 220px; }
+    .hl-thumbs {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      padding: 0.6rem;
+      gap: 0.5rem;
+    }
+    .hl-thumbs::-webkit-scrollbar { display: none; }
+    .hl-thumb {
+      flex: 0 0 42%;
+      aspect-ratio: 4 / 3;
+      scroll-snap-align: center;
+    }
+  }
+}
+
 /* Respect users who ask for less motion (vestibular comfort). The app has
-   several animations — page transitions, the hero glow, the markets ticker,
+   several animations — page transitions, the hero glow, skeleton shimmer,
    the SRS card flip and spinners — so we neutralise them wholesale rather
    than per-component. */
 @media (prefers-reduced-motion: reduce) {
