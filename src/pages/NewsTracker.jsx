@@ -4,7 +4,8 @@ import {
   RefreshCw, ExternalLink, Globe, Newspaper, ChevronDown, Clock,
   Search, Bookmark, LayoutGrid, Rows, List as ListIcon, X, TrendingUp, Check,
 } from 'lucide-react'
-import { InlineError } from '../components/states'
+import { InlineError, EmptyState as EmptyNotice } from '../components/states'
+import { Button, IconButton, Card, Tabs, Sheet, Skeleton, useToast } from '../components/ui'
 
 // ─── Feed catalogue ───────────────────────────────────────────────────────────
 
@@ -287,43 +288,43 @@ function CountryStats({ countryCode }) {
 
   function StatCard({ emoji, label, value, sub }) {
     return (
-      <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-        <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>{emoji} {label}</span>
+      <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 700 }}>{emoji} {label}</span>
         <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35 }}>{value}</span>
-        {sub && <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.05rem' }}>{sub}</span>}
+        {sub && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.05rem' }}>{sub}</span>}
       </div>
     )
   }
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', background: 'linear-gradient(135deg, rgba(167,139,250,0.04) 0%, transparent 60%)', border: '1px solid rgba(167,139,250,0.2)' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 5%, var(--bg-card)) 0%, var(--bg-card) 60%)', border: '1px solid var(--border-accent)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ fontSize: '2rem', lineHeight: 1 }}>{info.flag ?? COUNTRY_FEEDS[countryCode]?.flag}</span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>{info.name?.common}</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{region}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{region}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.8rem', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: '20px' }}>
-          <span style={{ fontSize: '0.68rem' }}>🏛️</span>
-          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#a78bfa' }}>{capital}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.8rem', background: 'var(--accent-soft)', border: '1px solid var(--border-accent)', borderRadius: '20px' }}>
+          <span style={{ fontSize: '0.75rem' }}>🏛️</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-text)' }}>{capital}</span>
         </div>
       </div>
       <div style={{ height: 1, background: 'var(--border)' }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
         {localTime && (
-          <div style={{ background: 'rgba(167,139,250,0.07)', border: '1px solid rgba(167,139,250,0.22)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-            <span style={{ fontSize: '0.62rem', color: '#a78bfa', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>🕐 Local Time</span>
+          <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--border-accent)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--accent-text)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>🕐 Local Time</span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.15 }}>{localTime}</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{localDate}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{localDate}</span>
           </div>
         )}
         {weather && (
-          <div style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.2)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-            <span style={{ fontSize: '0.62rem', color: '#34d399', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>☁️ Weather · {capital}</span>
+          <div style={{ background: 'var(--success-soft)', border: '1px solid color-mix(in srgb, var(--success) 25%, transparent)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--success)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>☁️ Weather · {capital}</span>
             <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.15 }}>{weather.temperature}°C</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{wLabel} · 💨 {weather.windspeed} km/h</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{wLabel} · 💨 {weather.windspeed} km/h</span>
           </div>
         )}
       </div>
@@ -523,6 +524,24 @@ function useFeed(feed) {
   return { articles, loading, error, lastFetch, refresh: load }
 }
 
+// ─── Bookmark toggle (shared by card + row) ──────────────────────────────────
+// Sits inside the article <a>, so it stops the click from opening the link.
+// Visually small, but the hit area is 36px (44px on touch) via .news-bm.
+function BookmarkToggle({ saved, onToggle }) {
+  return (
+    <button
+      type="button"
+      className={`news-bm${saved ? ' saved' : ''}`}
+      aria-pressed={saved}
+      aria-label={saved ? 'Remove bookmark' : 'Bookmark'}
+      title={saved ? 'Remove bookmark' : 'Bookmark'}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle() }}
+    >
+      <Bookmark size={15} strokeWidth={1.8} aria-hidden="true" />
+    </button>
+  )
+}
+
 // ─── NewsCard (grid / column) ─────────────────────────────────────────────────
 
 function NewsCard({ article, sourceName, isRead, isBookmarked, onBookmark, onMarkRead }) {
@@ -531,58 +550,43 @@ function NewsCard({ article, sourceName, isRead, isBookmarked, onBookmark, onMar
   return (
     <a href={article.link} target="_blank" rel="noopener noreferrer"
       onClick={() => onMarkRead?.(article.link)}
-      style={{
-        position: 'relative',
-        display: 'flex', flexDirection: 'column', textDecoration: 'none',
-        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px',
-        overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s', cursor: 'pointer',
-        opacity: isRead ? 0.55 : 1,
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
+      className={`news-card${isRead ? ' is-read' : ''}`}>
 
       {article.image && !imgErr && (
-        <div style={{ width: '100%', height: 160, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
-          <img src={article.image} alt="" onError={() => setImgErr(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div className="news-card-media">
+          <img src={article.image} alt="" loading="lazy" onError={() => setImgErr(true)} />
           {isRead && (
-            <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(10,10,15,0.9)', padding: '0.18rem 0.5rem', borderRadius: 999, fontSize: '0.6rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-              <Check size={9} /> Read
+            <div className="news-read-badge">
+              <Check size={10} aria-hidden="true" /> Read
             </div>
           )}
         </div>
       )}
 
-      <div style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#a78bfa', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{sourceName}</span>
+      <div className="news-card-body">
+        <div className="news-meta">
+          <span className="news-source">{sourceName}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {article.pubDate && (
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}>
-                <Clock size={9} strokeWidth={1.5} />
+              <span className="news-time">
+                <Clock size={11} strokeWidth={1.6} aria-hidden="true" />
                 {timeAgo(article.pubDate)}
               </span>
             )}
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onBookmark?.(article, sourceName) }}
-              title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: isBookmarked ? '#facc15' : 'var(--text-muted)', display: 'flex' }}>
-              <Bookmark size={12} fill={isBookmarked ? '#facc15' : 'none'} strokeWidth={1.8} />
-            </button>
+            <BookmarkToggle saved={isBookmarked} onToggle={() => onBookmark?.(article, sourceName)} />
           </div>
         </div>
 
-        <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-          {article.title}
-        </h3>
+        <h3 className="news-title">{article.title}</h3>
 
         {article.description && (
-          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+          <p className="news-desc">
             {article.description.length > 180 ? article.description.slice(0, 180) + '…' : article.description}
           </p>
         )}
 
-        <div style={{ marginTop: 'auto', paddingTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: '#a78bfa' }}>
-          Read more <ExternalLink size={10} />
+        <div className="news-readmore">
+          Read more <ExternalLink size={11} aria-hidden="true" />
         </div>
       </div>
     </a>
@@ -593,45 +597,29 @@ function NewsCard({ article, sourceName, isRead, isBookmarked, onBookmark, onMar
 
 function NewsListRow({ article, sourceName, isRead, isBookmarked, onBookmark, onMarkRead }) {
   const [imgErr, setImgErr] = useState(false)
+  const hasImg = article.image && !imgErr
   return (
     <a href={article.link} target="_blank" rel="noopener noreferrer"
       onClick={() => onMarkRead?.(article.link)}
-      style={{
-        display: 'grid', gridTemplateColumns: article.image && !imgErr ? '96px 1fr auto' : '1fr auto',
-        gap: '0.75rem', padding: '0.6rem 0.75rem', textDecoration: 'none',
-        background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10,
-        alignItems: 'center', transition: 'all 0.15s', opacity: isRead ? 0.6 : 1,
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}>
-      {article.image && !imgErr && (
-        <div style={{ width: 96, height: 72, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
-          <img src={article.image} alt="" onError={() => setImgErr(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      className={`news-row${hasImg ? ' has-img' : ''}${isRead ? ' is-read' : ''}`}>
+      {hasImg && (
+        <div className="news-row-thumb">
+          <img src={article.image} alt="" loading="lazy" onError={() => setImgErr(true)} />
         </div>
       )}
       <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.62rem', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-          <span>{sourceName}</span>
+        <div className="news-meta-inline">
+          <span className="news-source">{sourceName}</span>
           {article.pubDate && (
-            <span style={{ color: 'var(--text-muted)', fontWeight: 500, textTransform: 'none', letterSpacing: 0, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-              · <Clock size={9} /> {timeAgo(article.pubDate)}
+            <span className="news-time">
+              · <Clock size={11} strokeWidth={1.6} aria-hidden="true" /> {timeAgo(article.pubDate)}
             </span>
           )}
         </div>
-        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35, marginBottom: '0.15rem' }}>
-          {article.title}
-        </div>
-        {article.description && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-            {article.description}
-          </div>
-        )}
+        <div className="news-row-title">{article.title}</div>
+        {article.description && <div className="news-row-desc">{article.description}</div>}
       </div>
-      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onBookmark?.(article, sourceName) }}
-        title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: isBookmarked ? '#facc15' : 'var(--text-muted)', display: 'flex', alignSelf: 'center' }}>
-        <Bookmark size={14} fill={isBookmarked ? '#facc15' : 'none'} strokeWidth={1.8} />
-      </button>
+      <BookmarkToggle saved={isBookmarked} onToggle={() => onBookmark?.(article, sourceName)} />
     </a>
   )
 }
@@ -660,24 +648,22 @@ function FeedColumn({ feed, category, search, readSet, bookmarkSet, onBookmark, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Newspaper size={14} strokeWidth={1.5} style={{ color: '#a78bfa' }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flexWrap: 'wrap' }}>
+          <Newspaper size={14} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} aria-hidden="true" />
           <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{feed.name}</span>
           {lastFetch && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>· {timeAgo(lastFetch)}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>· {timeAgo(lastFetch)}</span>
           )}
           {(category !== 'all' || q) && !loading && (
-            <span style={{ fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>
               {filtered.length}/{articles.length}
             </span>
           )}
         </div>
-        <button onClick={refresh} disabled={loading} className="btn-ghost"
-          style={{ padding: '0.3rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.72rem' }}>
-          <RefreshCw size={11} style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }} />
+        <Button variant="ghost" size="sm" icon={RefreshCw} loading={loading} onClick={refresh}>
           {loading ? 'Loading…' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -686,9 +672,7 @@ function FeedColumn({ feed, category, search, readSet, bookmarkSet, onBookmark, 
 
       {loading && !error && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {[...Array(4)].map((_, i) => (
-            <div key={i} style={{ height: 80, borderRadius: '10px', background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          ))}
+          {[...Array(4)].map((_, i) => <Skeleton key={i} h={80} r={10} />)}
         </div>
       )}
 
@@ -720,12 +704,14 @@ export default function NewsTracker() {
   const [category, setCategory] = useState(saved.category ?? DEFAULTS.category)
   const [layout,   setLayout]   = useState(saved.layout   ?? DEFAULTS.layout)   // columns | unified | list
   const [search,   setSearch]   = useState('')
-  const [showCountryDrop, setShowCountryDrop] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [countrySearch, setCountrySearch] = useState('')
   const [bookmarks, setBookmarks] = useState(() => readJSON(LS.bookmarks, []))
   const [readMap,   setReadMap]   = useState(() => readJSON(LS.read, {}))
   const [showBookmarks, setShowBookmarks] = useState(false)
-  const { isMobile } = useBreakpoint()
+  const [sourceIdx, setSourceIdx] = useState(0)   // Columns view below desktop: one source at a time
+  const { isMobile, isDesktop } = useBreakpoint()
+  const toast = useToast()
   const locationDetected = useRef(!!saved.country) // don't overwrite persisted country on reload
   const [cacheTick, setCacheTick] = useState(0)
 
@@ -737,13 +723,8 @@ export default function NewsTracker() {
   useEffect(() => { writeJSON(LS.bookmarks, bookmarks) }, [bookmarks])
   useEffect(() => { writeJSON(LS.read, readMap) }, [readMap])
 
-  // Close country picker on outside click
-  useEffect(() => {
-    if (!showCountryDrop) return
-    const close = (e) => { if (!e.target.closest('[data-country-picker]')) { setShowCountryDrop(false); setCountrySearch('') } }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [showCountryDrop])
+  // A different feed set starts on its first source
+  useEffect(() => { setSourceIdx(0) }, [view, country])
 
   // Detect location only once (first visit) — persisted selection wins afterwards
   useEffect(() => {
@@ -768,11 +749,13 @@ export default function NewsTracker() {
   const readSet     = useMemo(() => new Set(Object.keys(readMap)), [readMap])
 
   const toggleBookmark = useCallback((article, sourceName) => {
+    const wasSaved = bookmarkSet.has(article.link)
     setBookmarks((prev) => {
       if (prev.some((b) => b.link === article.link)) return prev.filter((b) => b.link !== article.link)
       return [{ title: article.title, description: article.description, link: article.link, image: article.image, pubDate: article.pubDate, sourceName, savedAt: Date.now() }, ...prev].slice(0, 100)
     })
-  }, [])
+    toast(wasSaved ? 'Bookmark removed' : 'Bookmarked', { tone: wasSaved ? 'neutral' : 'success' })
+  }, [bookmarkSet, toast])
 
   const markRead = useCallback((link) => {
     setReadMap((prev) => {
@@ -792,6 +775,7 @@ export default function NewsTracker() {
   const activeFeeds = view === 'global' ? GLOBAL_FEEDS : (COUNTRY_FEEDS[country]?.feeds ?? [])
   const visibleFeeds = activeFeeds.slice(0, 3)
   const countryMeta = COUNTRY_FEEDS[country]
+  const activeSource = visibleFeeds[Math.min(sourceIdx, visibleFeeds.length - 1)]
 
   // For unified/list views, merge all articles across visible feeds
   const allFeedData = visibleFeeds.map((f) => ({ feed: f, data: feedCache.get(f.url) }))
@@ -832,142 +816,104 @@ export default function NewsTracker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleFeeds.map((f) => f.url).join('|'), cacheTick])
 
+  // Country picker
+  const closePicker = () => { setPickerOpen(false); setCountrySearch('') }
+  const pickCountry = (code) => { setCountry(code); setView('country'); closePicker() }
+  const countryMatches = COUNTRY_ORDER.filter((code) => {
+    const q = countrySearch.toLowerCase()
+    return !q || COUNTRY_FEEDS[code].label.toLowerCase().includes(q) || code.toLowerCase().includes(q)
+  })
+
+  const savedStyle = bookmarks.length ? { color: 'var(--warning)', fill: 'var(--warning)' } : undefined
+  const bookmarksButton = (
+    <Button variant="secondary" onClick={() => setShowBookmarks(true)} aria-label={`Bookmarks (${bookmarks.length})`}>
+      <Bookmark size={14} strokeWidth={1.8} style={savedStyle} aria-hidden="true" />
+      {!isMobile && 'Bookmarks'}
+      {bookmarks.length > 0 && <span style={{ color: 'var(--warning)', fontWeight: 700 }}>{bookmarks.length}</span>}
+    </Button>
+  )
+
+  const feedProps = { category, search, readSet, bookmarkSet, onBookmark: toggleBookmark, onMarkRead: markRead }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 1280 }}>
+    <div className="news-page">
 
-      {/* Heading */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', letterSpacing: '-0.03em' }}>
-            <span className="gradient-text">News Tracker</span>
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            Live RSS feeds — global headlines and local news, no API key needed.
-          </p>
-        </div>
-        <button onClick={() => setShowBookmarks(true)} className="btn-ghost"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem' }}>
-          <Bookmark size={13} fill={bookmarks.length ? '#facc15' : 'none'} color={bookmarks.length ? '#facc15' : undefined} strokeWidth={1.8} />
-          Bookmarks {bookmarks.length > 0 && <span style={{ color: '#facc15', fontWeight: 700 }}>{bookmarks.length}</span>}
-        </button>
-      </div>
-
-      {/* Controls */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', flexWrap: 'wrap' }}>
-        <div className="segmented">
-          <button className={`segmented-option ${view === 'global' ? 'active' : ''}`}
-            onClick={() => setView('global')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Globe size={12} /> Global
-          </button>
-          <button className={`segmented-option ${view === 'country' ? 'active' : ''}`}
-            onClick={() => setView('country')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            {countryMeta?.flag} {countryMeta?.label ?? 'Country'}
-          </button>
-        </div>
-
-        {view === 'country' && (
-          <div style={{ position: 'relative' }} data-country-picker>
-            <button className="btn-ghost" onClick={() => { setShowCountryDrop((v) => !v); setCountrySearch('') }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.9rem' }}>
-              {countryMeta?.flag} {countryMeta?.label}
-              <ChevronDown size={13} style={{ transform: showCountryDrop ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-            {showCountryDrop && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', minWidth: 220 }}>
-                <div style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid var(--border)' }}>
-                  <input autoFocus type="text" placeholder="Search country…" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)}
-                    style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.82rem', color: 'var(--text-primary)', outline: 'none' }} />
-                </div>
-                <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-                  {COUNTRY_ORDER
-                    .filter((code) => { const q = countrySearch.toLowerCase(); return !q || COUNTRY_FEEDS[code].label.toLowerCase().includes(q) || code.toLowerCase().includes(q) })
-                    .map((code) => {
-                      const meta = COUNTRY_FEEDS[code]
-                      return (
-                        <button key={code} onClick={() => { setCountry(code); setShowCountryDrop(false); setCountrySearch('') }}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', padding: '0.55rem 1rem', background: country === code ? 'rgba(139,92,246,0.1)' : 'transparent', color: country === code ? '#a78bfa' : 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
-                          <span>{meta.flag}</span><span>{meta.label}</span>
-                        </button>
-                      )
-                    })}
-                  {COUNTRY_ORDER.filter((code) => { const q = countrySearch.toLowerCase(); return !q || COUNTRY_FEEDS[code].label.toLowerCase().includes(q) || code.toLowerCase().includes(q) }).length === 0 && (
-                    <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>No countries found</div>
-                  )}
-                </div>
-              </div>
-            )}
+      {/* Heading — on phones the app header already names the page */}
+      {!isMobile && (
+        <div className="news-heading">
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', letterSpacing: '-0.03em' }}>
+              <span className="gradient-text">News Tracker</span>
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Live RSS feeds — global headlines and local news, no API key needed.
+            </p>
           </div>
-        )}
+          {bookmarksButton}
+        </div>
+      )}
 
-        {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 340 }}>
-          <Search size={13} style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-          <input type="text" placeholder="Search headlines…" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="input" style={{ paddingLeft: 30, paddingRight: search ? 30 : 12, fontSize: '0.82rem' }} />
-          {search && (
-            <button onClick={() => setSearch('')}
-              style={{ position: 'absolute', top: '50%', right: 6, transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
-              <X size={12} />
-            </button>
+      {/* Controls — one row on desktop, two compact rows on phones */}
+      <Card padding="sm" className="news-controls">
+        <div className="news-controls-row">
+          {/* Tapping the already-selected country tab opens the picker (the
+              chevron hints at it) — on phones there's no room for "Change". */}
+          <Tabs label="News scope" className="news-scope-tabs" value={view}
+            onChange={(v) => (v === 'country' && view === 'country' ? setPickerOpen(true) : setView(v))}
+            options={[
+              { value: 'global',  label: 'Global', icon: Globe },
+              { value: 'country', label: `${countryMeta?.flag ?? ''} ${countryMeta?.label ?? 'Country'}`.trim(),
+                iconRight: view === 'country' ? ChevronDown : undefined },
+            ]} />
+          {view === 'country' && !isMobile && (
+            <Button variant="ghost" size="sm" iconRight={ChevronDown} onClick={() => setPickerOpen(true)}>
+              Change
+            </Button>
           )}
+          {isMobile && <div style={{ marginLeft: 'auto' }}>{bookmarksButton}</div>}
         </div>
-
-        {/* Layout toggle */}
-        <div className="segmented" style={{ marginLeft: 'auto' }}>
-          <button className={`segmented-option ${layout === 'columns' ? 'active' : ''}`} onClick={() => setLayout('columns')}
-            title="Columns per source" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-            <LayoutGrid size={11} /> Columns
-          </button>
-          <button className={`segmented-option ${layout === 'unified' ? 'active' : ''}`} onClick={() => setLayout('unified')}
-            title="Unified grid" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Rows size={11} /> Unified
-          </button>
-          <button className={`segmented-option ${layout === 'list' ? 'active' : ''}`} onClick={() => setLayout('list')}
-            title="Compact list" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-            <ListIcon size={11} /> List
-          </button>
+        <div className="news-controls-row">
+          <div className="news-search">
+            <Search size={14} className="news-search-icon" aria-hidden="true" />
+            <input type="text" placeholder="Search headlines…" aria-label="Search headlines" value={search}
+              onChange={(e) => setSearch(e.target.value)} className="input" />
+            {search && <IconButton icon={X} label="Clear search" size="sm" className="news-search-clear" onClick={() => setSearch('')} />}
+          </div>
+          <Tabs label="Layout" iconOnly={!isDesktop} className="news-layout-tabs" value={layout} onChange={setLayout} options={[
+            { value: 'columns', label: 'Columns', icon: LayoutGrid },
+            { value: 'unified', label: 'Unified', icon: Rows },
+            { value: 'list',    label: 'List',    icon: ListIcon },
+          ]} />
         </div>
-      </div>
+      </Card>
 
-      {/* Category pills */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+      {/* Category chips — one swipeable row */}
+      <div className="chip-row" role="group" aria-label="Category">
         {CATEGORIES.map((cat) => (
-          <button key={cat.id} onClick={() => setCategory(cat.id)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-              padding: '0.35rem 0.85rem', borderRadius: '20px', border: '1px solid',
-              cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: 600,
-              transition: 'all 0.15s',
-              background: category === cat.id ? 'rgba(139,92,246,0.15)' : 'transparent',
-              borderColor: category === cat.id ? 'rgba(139,92,246,0.5)' : 'var(--border)',
-              color: category === cat.id ? '#a78bfa' : 'var(--text-muted)',
-            }}>
-            <span style={{ fontSize: '0.8rem' }}>{cat.emoji}</span>
+          <button key={cat.id} type="button" onClick={() => setCategory(cat.id)}
+            aria-pressed={category === cat.id}
+            className={`chip${category === cat.id ? ' active' : ''}`}>
+            <span aria-hidden="true">{cat.emoji}</span>
             {cat.label}
           </button>
         ))}
       </div>
 
-      {/* Trending keywords strip */}
+      {/* Trending keywords — tap to search, tap again to clear */}
       {trending.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', padding: '0.6rem 0.9rem', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.18)', borderRadius: '10px' }}>
-          <TrendingUp size={13} style={{ color: '#fb923c', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#fb923c', letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: '0.25rem' }}>Trending</span>
-          {trending.map(({ word, count }) => (
-            <button key={word} onClick={() => setSearch(word)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                background: search.toLowerCase() === word ? 'rgba(251,146,60,0.25)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${search.toLowerCase() === word ? 'rgba(251,146,60,0.5)' : 'var(--border)'}`,
-                color: search.toLowerCase() === word ? '#fb923c' : 'var(--text-secondary)',
-                padding: '0.2rem 0.6rem', borderRadius: 999, cursor: 'pointer',
-                fontSize: '0.72rem', fontWeight: 500,
-              }}>
-              {word}<span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{count}</span>
-            </button>
-          ))}
+        <div className="news-trending">
+          <span className="news-trending-label"><TrendingUp size={13} aria-hidden="true" /> Trending</span>
+          <div className="news-trending-chips">
+            {trending.map(({ word, count }) => {
+              const on = search.toLowerCase() === word
+              return (
+                <button key={word} type="button" onClick={() => setSearch(on ? '' : word)}
+                  aria-pressed={on} className={`chip chip-sm${on ? ' active' : ''}`}>
+                  {word}<span className="chip-count">{count}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -975,41 +921,71 @@ export default function NewsTracker() {
       {view === 'country' && <CountryStats key={country} countryCode={country} />}
 
       {/* Source count hint (quieter, pushed below) */}
-      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
-        {visibleFeeds.length} source{visibleFeeds.length !== 1 ? 's' : ''} · up to 12 articles each · auto-refresh 5 min
-      </div>
+      {!isMobile && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {visibleFeeds.length} source{visibleFeeds.length !== 1 ? 's' : ''} · up to 12 articles each · auto-refresh 5 min
+        </div>
+      )}
 
       {/* Invisible feed loaders to keep cache warm for unified/list layouts */}
       {layout !== 'columns' && visibleFeeds.map((feed) => (
         <FeedLoader key={`${view}-${country}-${feed.id}`} feed={feed} />
       ))}
 
-      {/* Feed body */}
-      {layout === 'columns' && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${visibleFeeds.length}, 1fr)`, gap: '1.25rem', alignItems: 'start' }}>
+      {/* Feed body — Columns: side by side on desktop, one source per tab below */}
+      {layout === 'columns' && isDesktop && (
+        <div className="news-columns" style={{ gridTemplateColumns: `repeat(${visibleFeeds.length}, minmax(0, 1fr))` }}>
           {visibleFeeds.map((feed) => (
-            <FeedColumn key={`${view}-${country}-${feed.id}`} feed={feed} category={category} search={search}
-              readSet={readSet} bookmarkSet={bookmarkSet} onBookmark={toggleBookmark} onMarkRead={markRead} />
+            <FeedColumn key={`${view}-${country}-${feed.id}`} feed={feed} {...feedProps} />
           ))}
         </div>
       )}
 
-      {layout === 'unified' && (
-        <UnifiedGrid articles={mergedArticles} loading={anyLoading} search={search} category={category}
-          readSet={readSet} bookmarkSet={bookmarkSet} onBookmark={toggleBookmark} onMarkRead={markRead} />
+      {layout === 'columns' && !isDesktop && activeSource && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {visibleFeeds.length > 1 && (
+            <Tabs label="Source" block value={activeSource.id}
+              onChange={(id) => setSourceIdx(visibleFeeds.findIndex((f) => f.id === id))}
+              options={visibleFeeds.map((f) => ({ value: f.id, label: f.name }))} />
+          )}
+          <FeedColumn key={`${view}-${country}-${activeSource.id}`} feed={activeSource} {...feedProps} />
+        </div>
       )}
 
-      {layout === 'list' && (
-        <UnifiedList articles={mergedArticles} loading={anyLoading} search={search} category={category}
-          readSet={readSet} bookmarkSet={bookmarkSet} onBookmark={toggleBookmark} onMarkRead={markRead} />
-      )}
+      {layout === 'unified' && <UnifiedGrid articles={mergedArticles} loading={anyLoading} {...feedProps} />}
+      {layout === 'list'    && <UnifiedList articles={mergedArticles} loading={anyLoading} {...feedProps} />}
 
-      {/* Bookmarks panel */}
-      {showBookmarks && (
-        <BookmarksPanel bookmarks={bookmarks} onClose={() => setShowBookmarks(false)}
-          onRemove={(link) => setBookmarks((prev) => prev.filter((b) => b.link !== link))}
-          onClear={() => { if (confirm('Remove all bookmarks?')) setBookmarks([]) }} />
-      )}
+      {/* Country picker */}
+      <Sheet open={pickerOpen} onClose={closePicker} title="Choose a country" width={420}>
+        <div className="news-search" style={{ marginBottom: '0.75rem' }}>
+          <Search size={14} className="news-search-icon" aria-hidden="true" />
+          <input type="text" placeholder="Search country…" aria-label="Search country" value={countrySearch}
+            onChange={(e) => setCountrySearch(e.target.value)} className="input" />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          {countryMatches.map((code) => {
+            const meta = COUNTRY_FEEDS[code]
+            const current = country === code
+            return (
+              <button key={code} type="button" onClick={() => pickCountry(code)}
+                aria-current={current || undefined}
+                className={`nav-item${current ? ' active' : ''}`}>
+                <span aria-hidden="true">{meta.flag}</span>
+                <span style={{ flex: 1, textAlign: 'left' }}>{meta.label}</span>
+                {current && <Check size={14} aria-hidden="true" />}
+              </button>
+            )
+          })}
+          {countryMatches.length === 0 && (
+            <div style={{ padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>No countries found</div>
+          )}
+        </div>
+      </Sheet>
+
+      {/* Bookmarks */}
+      <BookmarksPanel open={showBookmarks} bookmarks={bookmarks} onClose={() => setShowBookmarks(false)}
+        onRemove={(link) => setBookmarks((prev) => prev.filter((b) => b.link !== link))}
+        onClear={() => { if (confirm('Remove all bookmarks?')) setBookmarks([]) }} />
     </div>
   )
 }
@@ -1026,16 +1002,14 @@ function FeedLoader({ feed }) {
 function UnifiedGrid({ articles, loading, search, category, readSet, bookmarkSet, onBookmark, onMarkRead }) {
   if (loading && articles.length === 0) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} style={{ height: 280, borderRadius: 10, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        ))}
+      <div className="news-grid">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} h={280} r={10} />)}
       </div>
     )
   }
   if (!articles.length) return <EmptyState search={search} category={category} />
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+    <div className="news-grid">
       {articles.map((a, i) => (
         <NewsCard key={`${a.link}-${i}`} article={a} sourceName={a._sourceName}
           isRead={readSet.has(a.link)} isBookmarked={bookmarkSet.has(a.link)}
@@ -1049,9 +1023,7 @@ function UnifiedList({ articles, loading, search, category, readSet, bookmarkSet
   if (loading && articles.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {[...Array(8)].map((_, i) => (
-          <div key={i} style={{ height: 80, borderRadius: 10, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        ))}
+        {[...Array(8)].map((_, i) => <Skeleton key={i} h={80} r={10} />)}
       </div>
     )
   }
@@ -1077,71 +1049,29 @@ function EmptyState({ search, category }) {
   )
 }
 
-// ─── Bookmarks side panel ─────────────────────────────────────────────────────
+// ─── Bookmarks (bottom sheet on phones, dialog on larger screens) ────────────
 
-function BookmarksPanel({ bookmarks, onClose, onRemove, onClear }) {
-  // Close on Escape
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
+function BookmarksPanel({ open, bookmarks, onClose, onRemove, onClear }) {
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
-      <aside style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 'min(420px, 100vw)', background: 'var(--bg-secondary)',
-        borderLeft: '1px solid var(--border)', zIndex: 101,
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.4)',
-      }}>
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Bookmark size={15} fill="#facc15" color="#facc15" />
-            <span style={{ fontWeight: 700 }}>Bookmarks</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{bookmarks.length}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            {bookmarks.length > 0 && (
-              <button onClick={onClear} className="btn-ghost" style={{ padding: '0.3rem 0.6rem', fontSize: '0.68rem' }}>
-                Clear all
-              </button>
-            )}
-            <button onClick={onClose}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 4 }}>
-              <X size={16} />
-            </button>
-          </div>
-        </header>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {bookmarks.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <Bookmark size={32} strokeWidth={1.2} style={{ opacity: 0.35, marginBottom: '0.75rem' }} />
-              <div>No bookmarks yet.</div>
-              <div style={{ fontSize: '0.72rem', marginTop: '0.25rem' }}>Tap the ★ on any article to save it.</div>
-            </div>
-          )}
+    <Sheet open={open} onClose={onClose} width={460}
+      title={`Bookmarks${bookmarks.length ? ` · ${bookmarks.length}` : ''}`}
+      footer={bookmarks.length > 0 && <Button variant="danger" size="sm" onClick={onClear}>Clear all</Button>}>
+      {bookmarks.length === 0 ? (
+        <EmptyNotice icon={Bookmark} title="No bookmarks yet" hint="Tap the bookmark icon on any article to save it here." />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {bookmarks.map((b) => (
             <div key={b.link} style={{ position: 'relative' }}>
-              <a href={b.link} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'block', padding: '0.65rem 0.8rem', paddingRight: '2.25rem', textDecoration: 'none', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, transition: 'border-color 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}>
-                <div style={{ fontSize: '0.62rem', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>{b.sourceName}</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35, marginBottom: '0.2rem' }}>{b.title}</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saved {timeAgo(new Date(b.savedAt).toISOString())}</div>
+              <a href={b.link} target="_blank" rel="noopener noreferrer" className="news-saved">
+                <div className="news-source" style={{ marginBottom: '0.2rem' }}>{b.sourceName}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.35, marginBottom: '0.2rem' }}>{b.title}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Saved {timeAgo(new Date(b.savedAt).toISOString())}</div>
               </a>
-              <button onClick={() => onRemove(b.link)} title="Remove"
-                style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
-                <X size={12} />
-              </button>
+              <IconButton icon={X} label="Remove bookmark" size="sm" className="news-saved-remove" onClick={() => onRemove(b.link)} />
             </div>
           ))}
         </div>
-      </aside>
-    </>
+      )}
+    </Sheet>
   )
 }

@@ -1017,6 +1017,273 @@
   }
 }
 
+/* ── Shared chips (category / filter pills) ──────────────────────────────── */
+@layer components {
+  .chip-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .chip:hover { color: var(--text-primary); border-color: var(--border-accent); }
+  .chip.active {
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent-purple) 50%, transparent);
+    color: var(--accent-text);
+  }
+  .chip-sm { padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 500; }
+  .chip-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+  @media (pointer: coarse) {
+    .chip { min-height: 36px; }
+  }
+}
+
+/* ── News page (pages/NewsTracker.jsx) ───────────────────────────────────── */
+@layer components {
+  .news-page { display: flex; flex-direction: column; gap: 1.25rem; max-width: 1280px; min-width: 0; }
+  .news-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* Controls: rows flatten into one wrapping line from tablet up */
+  .news-controls { display: flex; flex-direction: column; gap: 0.75rem; }
+  .news-controls-row { display: flex; align-items: center; gap: 0.6rem; }
+  @media (min-width: 768px) {
+    .news-controls { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.9rem; }
+    .news-controls-row { display: contents; }
+    .news-layout-tabs { margin-left: auto; }
+  }
+  .news-search { position: relative; flex: 1 1 160px; min-width: 0; }
+  @media (min-width: 1024px) { .news-search { max-width: 340px; } }
+  /* Scope tabs shrink (long country names truncate) before anything wraps */
+  .news-scope-tabs { flex: 0 1 auto; min-width: 0; }
+  .news-scope-tabs .segmented-option { min-width: 0; }
+  .news-scope-tabs .segmented-option:first-child { flex-shrink: 0; }
+  .news-scope-tabs .segmented-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Icon-only layout switcher (below desktop) stays compact */
+  @media (max-width: 1023px) {
+    .news-layout-tabs { flex-shrink: 0; }
+    .news-layout-tabs .segmented-option { padding: 0.4rem 0.6rem; }
+  }
+  .news-search .input { padding-left: 32px; padding-right: 40px; font-size: 0.85rem; }
+  .news-search-icon {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .news-search-clear { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); }
+  .news-search-clear:active:not(:disabled) { transform: translateY(-50%) scale(0.97); }
+
+  /* Trending */
+  .news-trending {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    background: color-mix(in srgb, var(--orange) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--orange) 20%, transparent);
+    border-radius: 10px;
+    min-width: 0;
+  }
+  .news-trending-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--orange);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .news-trending-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; min-width: 0; }
+  .news-trending .chip.active {
+    background: var(--orange-soft);
+    border-color: color-mix(in srgb, var(--orange) 50%, transparent);
+    color: var(--orange);
+  }
+  @media (max-width: 767px) {
+    .news-trending { padding: 0.5rem 0.75rem; }
+    .news-trending-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .news-trending-chips::-webkit-scrollbar { display: none; }
+  }
+
+  /* Feed layouts */
+  .news-columns { display: grid; gap: 1.25rem; align-items: start; }
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+  /* Long source names in the source tabs truncate instead of overflowing */
+  .segmented-block .segmented-option { min-width: 0; }
+  .segmented-block .segmented-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Article card */
+  .news-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .news-card:hover { border-color: var(--border-accent); transform: translateY(-1px); }
+  .news-card.is-read, .news-row.is-read { opacity: 0.6; }
+  .news-card-media { position: relative; height: 160px; overflow: hidden; flex-shrink: 0; }
+  .news-card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .news-read-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(10, 10, 15, 0.85);
+    color: #e4e4ee;
+    font-size: 0.75rem;
+  }
+  .news-card-body { display: flex; flex-direction: column; gap: 0.45rem; flex: 1; padding: 0.85rem; }
+  .news-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .news-meta-inline { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+  .news-source {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .news-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .news-title { margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+  .news-desc { margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+  .news-readmore {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: auto;
+    padding-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--accent-text);
+  }
+
+  /* Bookmark toggle — 36px hit area (44px on touch) without growing the row */
+  .news-bm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin: -10px -10px -10px 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .news-bm:hover { background: var(--nav-hover); color: var(--text-primary); }
+  .news-bm.saved { color: var(--warning); }
+  .news-bm.saved svg { fill: currentColor; }
+  @media (pointer: coarse) {
+    .news-bm { width: 44px; height: 44px; margin: -12px -12px -12px 0; }
+  }
+
+  /* Compact list row */
+  .news-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    text-decoration: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.15s ease;
+  }
+  .news-row.has-img { grid-template-columns: 96px minmax(0, 1fr) auto; }
+  .news-row:hover { border-color: var(--border-accent); }
+  .news-row .news-bm { margin: 0; }
+  .news-row-thumb { width: 96px; height: 72px; border-radius: 8px; overflow: hidden; }
+  .news-row-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .news-row-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); line-height: 1.35; margin-bottom: 0.15rem; }
+  .news-row-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  @media (max-width: 767px) {
+    .news-row { gap: 0.6rem; padding: 0.55rem 0.4rem 0.55rem 0.6rem; }
+    .news-row.has-img { grid-template-columns: 72px minmax(0, 1fr) auto; }
+    .news-row-thumb { width: 72px; height: 56px; }
+    .news-row-desc { display: none; }
+  }
+
+  /* Saved bookmarks in the sheet */
+  .news-saved {
+    display: block;
+    padding: 0.65rem 3rem 0.65rem 0.8rem;
+    text-decoration: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.15s ease;
+  }
+  .news-saved:hover { border-color: var(--border-accent); }
+  .news-saved-remove { position: absolute; top: 6px; right: 6px; }
+}
+
 /* Respect users who ask for less motion (vestibular comfort). The app has
    several animations — page transitions, the hero glow, skeleton shimmer,
    the SRS card flip and spinners — so we neutralise them wholesale rather
