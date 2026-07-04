@@ -285,7 +285,7 @@ function MatchDetails({ leagueId, eventId }) {
               const clock  = p.clock?.displayValue ?? ''
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem' }}>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)', width: 38, flexShrink: 0 }}>{clock}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', width: 38, flexShrink: 0 }}>{clock}</span>
                   <span style={{ fontSize: '0.85rem' }}>{isGoal ? '⚽' : /red/i.test(p.type?.text ?? '') ? '🟥' : '🟨'}</span>
                   <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.text}</span>
                 </div>
@@ -307,9 +307,9 @@ function MatchDetails({ leagueId, eventId }) {
               const label = h?.label ?? a?.label ?? n
               return (
                 <div key={n} style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0.5rem', alignItems: 'center', fontSize: '0.7rem' }}>
-                  <span style={{ textAlign: 'right', color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{h?.displayValue ?? '-'}</span>
+                  <span style={{ textAlign: 'right', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{h?.displayValue ?? '-'}</span>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', minWidth: 80, textAlign: 'center' }}>{label}</span>
-                  <span style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{a?.displayValue ?? '-'}</span>
+                  <span style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{a?.displayValue ?? '-'}</span>
                 </div>
               )
             })}
@@ -378,7 +378,7 @@ function MatchCard({ event, compact = false, favs, toggleFav }) {
               </>
             ) : (
               <>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: compact ? '1.1rem' : '1.3rem', fontWeight: 800, letterSpacing: '0.04em', color: isLive ? '#34d399' : 'var(--text-primary)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: compact ? '1.1rem' : '1.3rem', fontWeight: 800, letterSpacing: '0.04em', color: isLive ? '#34d399' : 'var(--text-primary)' }}>
                   {event.home.score ?? 0} – {event.away.score ?? 0}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', marginTop: '0.1rem' }}>
@@ -594,21 +594,21 @@ function StandingsView({ leagueId }) {
               <tbody>
                 {items.map((r, i) => (
                   <tr key={i} style={{ borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-                    <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>{r.rank || i + 1}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{r.rank || i + 1}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {r.logo ? <img src={r.logo} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} /> : <div style={{ width: 18, height: 18 }} />}
                         <span style={{ fontWeight: 600 }}>{r.team}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.gp}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.w}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.d}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.l}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.gf}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.ga}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: "'JetBrains Mono', monospace" }}>{r.gd}</td>
-                    <td style={{ padding: '0.5rem 0.9rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: 'var(--text-primary)' }}>{r.pts}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.gp}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.w}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.d}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.l}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.gf}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.ga}</td>
+                    <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>{r.gd}</td>
+                    <td style={{ padding: '0.5rem 0.9rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-primary)' }}>{r.pts}</td>
                   </tr>
                 ))}
               </tbody>

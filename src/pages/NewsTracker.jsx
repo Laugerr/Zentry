@@ -316,7 +316,7 @@ function CountryStats({ countryCode }) {
         {localTime && (
           <div style={{ background: 'var(--accent-soft)', border: '1px solid var(--border-accent)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--accent-text)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>🕐 Local Time</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.15 }}>{localTime}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.15 }}>{localTime}</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{localDate}</span>
           </div>
         )}
@@ -656,7 +656,7 @@ function FeedColumn({ feed, category, search, readSet, bookmarkSet, onBookmark, 
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>· {timeAgo(lastFetch)}</span>
           )}
           {(category !== 'all' || q) && !loading && (
-            <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
               {filtered.length}/{articles.length}
             </span>
           )}
@@ -922,7 +922,7 @@ export default function NewsTracker() {
 
       {/* Source count hint (quieter, pushed below) */}
       {!isMobile && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
           {visibleFeeds.length} source{visibleFeeds.length !== 1 ? 's' : ''} · up to 12 articles each · auto-refresh 5 min
         </div>
       )}

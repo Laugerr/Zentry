@@ -117,7 +117,7 @@ export default function CommandPalette({ open, onClose }) {
             placeholder="Jump to a tool or action…"
             style={{
               flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: 'var(--text-primary)', fontSize: '0.95rem', fontFamily: "'Inter', sans-serif",
+              color: 'var(--text-primary)', fontSize: '0.95rem', fontFamily: 'var(--font-sans)',
             }}
           />
           <kbd style={kbdStyle}>ESC</kbd>
@@ -201,6 +201,6 @@ const kbdStyle = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   minWidth: 18, height: 18, padding: '0 4px',
   background: 'var(--input-bg-hover)', border: '1px solid var(--border)',
-  borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem',
+  borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: '0.62rem',
   fontWeight: 600, color: 'var(--text-secondary)',
 }

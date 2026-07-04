@@ -333,7 +333,7 @@ function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolu
               color: sleep ? '#a78bfa' : 'var(--text-muted)', padding: '0.3rem 0.4rem', borderRadius: 6,
               display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.68rem', fontWeight: 600 }}>
             <Moon size={13} />
-            {sleep && <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            {sleep && <span style={{ fontFamily: 'var(--font-mono)' }}>
               {Math.floor(sleepRemaining / 60)}:{String(sleepRemaining % 60).padStart(2, '0')}
             </span>}
           </button>

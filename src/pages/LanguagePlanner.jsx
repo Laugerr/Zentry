@@ -335,7 +335,7 @@ async function parseApkg(file, deckId, onProgress) {
 const panel     = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.1rem 1.2rem' }
 const btnPrimary = { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: '#fff', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, padding: '0.5rem 1.1rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }
 const btnGhost  = { background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.45rem 0.85rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }
-const labelStyle = { display: 'block', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem', fontFamily: "'JetBrains Mono', monospace" }
+const labelStyle = { display: 'block', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }
 
 // ─── Deck ring (SVG donut) ────────────────────────────────────────────────────
 function DeckRing({ cards, deckId, size = 72 }) {
@@ -371,7 +371,7 @@ function DeckRing({ cards, deckId, size = 72 }) {
         ))}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82rem', fontWeight: 700, color: '#a78bfa', lineHeight: 1 }}>{masteredPct}%</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: '#a78bfa', lineHeight: 1 }}>{masteredPct}%</span>
         <span style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 1 }}>done</span>
       </div>
     </div>
@@ -393,7 +393,7 @@ function GoalRing({ done, goal, size = 56 }) {
           style={{ transition: 'stroke-dasharray 0.5s ease' }} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 700, color, lineHeight: 1 }}>{done}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color, lineHeight: 1 }}>{done}</span>
       </div>
     </div>
   )
@@ -451,7 +451,7 @@ function StatsTab({ cards, decks, streak }) {
           { label: 'Study min today', value: studyMinToday > 0 ? `${studyMinToday}m` : '—', color: studyMinToday > 0 ? '#a78bfa' : 'var(--text-muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...panel, padding: '0.9rem 1rem' }}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
           </div>
         ))}
@@ -459,7 +459,7 @@ function StatsTab({ cards, decks, streak }) {
 
       {/* Heatmap */}
       <div style={panel}>
-        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.85rem', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.85rem', fontFamily: 'var(--font-mono)' }}>
           Study activity · last 90 days
         </div>
         <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 4 }}>
@@ -491,7 +491,7 @@ function StatsTab({ cards, decks, streak }) {
 
       {/* Forecast */}
       <div style={panel}>
-        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
           Due forecast · next 7 days
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', height: 80 }}>
@@ -499,7 +499,7 @@ function StatsTab({ cards, decks, streak }) {
             const pct = count / maxForecast
             return (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.62rem', color: count > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{count}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: count > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{count}</span>
                 <div style={{
                   width: '100%', borderRadius: '4px 4px 0 0',
                   height: `${Math.max(4, pct * 56)}px`,
@@ -532,7 +532,7 @@ function StatsTab({ cards, decks, streak }) {
         return (
           <div style={panel}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)' }}>
                 {monthName}
               </div>
               <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -566,7 +566,7 @@ function StatsTab({ cards, decks, streak }) {
       {/* Deck breakdown */}
       {decks.length > 0 && (
         <div style={panel}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
             Deck breakdown
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -587,7 +587,7 @@ function StatsTab({ cards, decks, streak }) {
                     <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
                       {Object.entries(counts).filter(([,v]) => v > 0).map(([k, v]) => (
-                        <span key={k} style={{ fontSize: '0.68rem', color: LABELS[k][1], fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+                        <span key={k} style={{ fontSize: '0.68rem', color: LABELS[k][1], fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                           {v} <span style={{ fontWeight: 400, opacity: 0.7 }}>{LABELS[k][0]}</span>
                         </span>
                       ))}
@@ -665,7 +665,7 @@ function DictionaryPopup({ word, onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem' }}>
           <div>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)' }}>{word}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)' }}>{word}</span>
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 8 }}>Wiktionary</span>
           </div>
           <button onClick={onClose} style={{ ...btnGhost, padding: '0.3rem 0.5rem' }}><X size={14} /></button>
@@ -696,7 +696,7 @@ function DictionaryPopup({ word, onClose }) {
           {error && <div style={{ padding: '1rem 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</div>}
           {data && data.map((section, si) => (
             <div key={si} style={{ marginBottom: '1.1rem' }}>
-              <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.45rem' }}>
+              <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.45rem' }}>
                 {section.partOfSpeech}
               </div>
               <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -877,21 +877,21 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', textAlign: 'center', padding: '3rem 1rem' }}>
         <div style={{ fontSize: '3.5rem', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>🎉</div>
         <div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Session complete</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>Session complete</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6 }}>{total} cards reviewed</div>
         </div>
         {/* Animated streak */}
         {showStreak && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.75rem', borderRadius: 50, background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>
             <Flame size={22} style={{ color: '#f97316' }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.5rem', fontWeight: 800, color: '#f97316' }}>{streak.current ?? 1}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 800, color: '#f97316' }}>{streak.current ?? 1}</span>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>day streak</span>
           </div>
         )}
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[['Again','#f87171',stats.again],['Hard','#fbbf24',stats.hard],['Good','#60a5fa',stats.good],['Easy','#4ade80',stats.easy]].map(([l,c,v]) => (
             <div key={l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.4rem', fontWeight: 700, color: c }}>{v}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: c }}>{v}</span>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{l}</span>
             </div>
           ))}
@@ -939,7 +939,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
           aria-label="Focus timer (double-click to reset)"
           title={pomodoro.running ? 'Pause timer (double-click to reset)' : 'Start 25-min focus timer'}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem', fontWeight: 700, transition: 'all 0.2s',
+            display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, transition: 'all 0.2s',
             background: pomodoro.phase === 'work' ? 'rgba(249,115,22,0.12)' : 'rgba(96,165,250,0.12)',
             color:      pomodoro.phase === 'work' ? '#f97316' : '#60a5fa',
             outline:    pomodoro.running ? `1px solid ${pomodoro.phase === 'work' ? 'rgba(249,115,22,0.35)' : 'rgba(96,165,250,0.35)'}` : '1px solid var(--border)',
@@ -949,7 +949,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
           {!pomodoro.running && <Play size={10} style={{ opacity: 0.6 }} />}
           {pomodoro.running  && <Pause size={10} style={{ opacity: 0.6 }} />}
         </button>
-        <div style={{ display: 'flex', gap: '0.75rem', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.82rem', fontWeight: 700 }}>
+        <div style={{ display: 'flex', gap: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700 }}>
           <span style={{ color: '#f87171' }}>{remaining.learning}</span>
           <span style={{ color: '#4ade80' }}>{remaining.reviews}</span>
           <span style={{ color: '#60a5fa' }}>{remaining.newCards}</span>
@@ -1021,7 +1021,7 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
               <button key={key} onClick={() => rate(card, key)} style={{
                 padding: '0.75rem 0.5rem', borderRadius: 10,
                 border: `1px solid ${border}`, background: bg, color,
-                fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                fontFamily: 'var(--font-mono)', fontWeight: 700,
                 fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.15s',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
               }}>
@@ -1097,7 +1097,7 @@ function HeroBanner({ streak, allDue, totalCards, decks, onStudyAll, reviewedTod
               </div>
             ) : (
               <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color: reviewedToday >= goal ? '#4ade80' : 'var(--text-primary)' }}>{reviewedToday}/{goal}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: reviewedToday >= goal ? '#4ade80' : 'var(--text-primary)' }}>{reviewedToday}/{goal}</div>
                 <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>daily goal</div>
               </button>
             )}
@@ -1110,7 +1110,7 @@ function HeroBanner({ streak, allDue, totalCards, decks, onStudyAll, reviewedTod
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <Flame size={18} style={{ color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }} />
           <div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }}>{streak.current ?? 0}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }}>{streak.current ?? 0}</div>
             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>day streak</div>
           </div>
         </div>
@@ -1122,7 +1122,7 @@ function HeroBanner({ streak, allDue, totalCards, decks, onStudyAll, reviewedTod
           { val: decks.length, label: 'decks', color: '#a78bfa' },
         ].map(({ val, label, color }) => (
           <div key={label}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '0.88rem', color }}>{val}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color }}>{val}</div>
             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{label}</div>
           </div>
         ))}
@@ -1143,7 +1143,7 @@ function WordOfDay({ cards }) {
   if (!card) return null
   return (
     <div style={{ ...panel, borderColor: 'rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.04)' }}>
-      <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.65rem' }}>
+      <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.65rem' }}>
         ✦ Word of the day
       </div>
       <div style={{ fontSize: 'clamp(1.1rem,2.5vw,1.5rem)', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', padding: '0.5rem 0' }}>
@@ -1173,7 +1173,7 @@ function StrugglingCards({ cards, onStudy }) {
   return (
     <div style={panel}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>Struggling cards</span>
+        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)' }}>Struggling cards</span>
         <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 7px', borderRadius: 99 }}>{struggling.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.85rem' }}>
@@ -1182,7 +1182,7 @@ function StrugglingCards({ cards, onStudy }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.front}</div>
             </div>
-            <span style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, flexShrink: 0 }}>{c.lapses} lapses</span>
+            <span style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700, flexShrink: 0 }}>{c.lapses} lapses</span>
           </div>
         ))}
       </div>
@@ -1203,7 +1203,7 @@ function RecentlyMastered({ cards }) {
   if (!mastered.length) return null
   return (
     <div style={panel}>
-      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.65rem' }}>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.65rem' }}>
         Recently in review
       </div>
       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -1231,7 +1231,7 @@ function DeckGridCard({ deck, cards, onReview, onEdit }) {
       {/* Cover */}
       <div style={{ background: dc.gradient, padding: '1.5rem 1rem 1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', minHeight: 80 }}>
         <span style={{ fontSize: '1.8rem', lineHeight: 1 }}>{dc.emoji}</span>
-        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 99, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 700, color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 99, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>
           {total} cards
         </div>
       </div>
@@ -1239,9 +1239,9 @@ function DeckGridCard({ deck, cards, onReview, onEdit }) {
       <div style={{ background: 'var(--bg-card)', padding: '0.85rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
-          {learning.length > 0 && <span style={{ fontSize: '0.65rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length} learning</span>}
-          {reviews.length  > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length} review</span>}
-          {newCards.length > 0 && <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length} new</span>}
+          {learning.length > 0 && <span style={{ fontSize: '0.65rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+          {reviews.length  > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+          {newCards.length > 0 && <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
           {due === 0 && total > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80' }}>✓ caught up</span>}
         </div>
         <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -1268,9 +1268,9 @@ function DeckRow({ deck, cards, onReview, onEdit }) {
         <div style={{ fontWeight: 700, fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: 5, flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{total} cards</span>
-          {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length} learning</span>}
-          {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length} review</span>}
-          {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length} new</span>}
+          {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+          {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+          {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
           {due === 0 && total > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>All caught up ✓</span>}
         </div>
       </div>
@@ -1290,7 +1290,7 @@ function EaseBadge({ ease }) {
   const color = ease >= 2.5 ? '#4ade80' : ease >= 2.0 ? '#fbbf24' : '#f87171'
   const label = ease >= 2.5 ? 'Easy' : ease >= 2.0 ? 'Medium' : 'Hard'
   return (
-    <span style={{ fontSize: '0.58rem', fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}44`, padding: '1px 6px', borderRadius: 99, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: '0.58rem', fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}44`, padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
       {label} {ease.toFixed(1)}
     </span>
   )
@@ -1331,7 +1331,7 @@ function CardStatsDrawer({ card, onClose }) {
             { label: 'Ease',     value: (card.ease ?? DEFAULT_EASE).toFixed(2), color: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'var(--input-bg)', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1rem', color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
               <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
             </div>
           ))}
@@ -1339,7 +1339,7 @@ function CardStatsDrawer({ card, onClose }) {
 
         {/* Ease bar */}
         <div>
-          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: "'JetBrains Mono', monospace" }}>Ease factor</div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: 'var(--font-mono)' }}>Ease factor</div>
           <div style={{ height: 6, borderRadius: 99, background: 'var(--border)', overflow: 'hidden' }}>
             <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(100, ((card.ease ?? DEFAULT_EASE) / 4) * 100)}%`, background: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171', transition: 'width 0.4s ease' }} />
           </div>
@@ -1351,7 +1351,7 @@ function CardStatsDrawer({ card, onClose }) {
         {/* Review history */}
         {history.length > 0 && (
           <div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontFamily: "'JetBrains Mono', monospace" }}>
+            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>
               Review history · last {history.length} reviews
             </div>
             {/* Rating dots */}
@@ -1450,12 +1450,12 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>{c.back}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {c.suspended
-                        ? <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: "'JetBrains Mono', monospace" }}>Suspended</span>
-                        : <span style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
+                        ? <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Suspended</span>
+                        : <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
                       }
-                      {c.buried === todayStr() && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: "'JetBrains Mono', monospace" }}>Buried today</span>}
+                      {c.buried === todayStr() && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Buried today</span>}
                       {c.reps > 0 && !c.suspended && <EaseBadge ease={c.ease} />}
-                      {c.lapses > 0 && <span style={{ fontSize: '0.58rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace" }}>{c.lapses} lapses</span>}
+                      {c.lapses > 0 && <span style={{ fontSize: '0.58rem', color: '#f87171', fontFamily: 'var(--font-mono)' }}>{c.lapses} lapses</span>}
                       {c.tags && c.tags.split(/\s+/).filter(Boolean).map(t => (
                         <span key={t} style={{ fontSize: '0.58rem', color: 'var(--text-muted)', background: 'var(--border)', padding: '0 5px', borderRadius: 99 }}>{t}</span>
                       ))}
@@ -1641,9 +1641,9 @@ export default function LanguagePlanner() {
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: 4 }}>{deck.name}</div>
                       <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{learning.length} learning</span>}
-                        {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{reviews.length} review</span>}
-                        {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{newCards.length} new</span>}
+                        {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+                        {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+                        {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
                       </div>
                     </div>
                   </div>

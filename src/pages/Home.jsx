@@ -42,7 +42,7 @@ function SectionHead({ icon: Icon, accent = 'var(--accent-text)', label, to, act
           <Icon size={13} strokeWidth={2} />
         </span>
         <span style={{
-          fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700,
+          fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 700,
           color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>{label}</span>
       </div>
@@ -83,7 +83,7 @@ function HeroWeather() {
       }}>{WMO_ICON[data.code] ?? '🌡️'}</div>
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-          <span style={{ fontSize: '1.85rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+          <span style={{ fontSize: '1.85rem', fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
             {data.temp}°
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -228,14 +228,14 @@ function HeadlinesPanel() {
   const trackItems = [items[prevIdx], items[activeIdx], items[nextIdx]]
 
   return (
-    <Card as="section" padding="none" className="home-panel home-panel-flush">
+    <Card as="section" padding="none" tone="news" className="home-panel home-panel-flush">
 
       {/* Header */}
       <div style={{ padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
           <Newspaper size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Top Headlines</span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: 'var(--text-muted)' }}>{activeIdx + 1} / {len}</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Top Headlines</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{activeIdx + 1} / {len}</span>
         </div>
         <Link to="/news" className="home-more-link">
           More news <ArrowRight size={12} />
@@ -290,7 +290,7 @@ function HeadlinesPanel() {
           }}
         >
           {active.pubDate && (
-            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', monospace", marginBottom: 5, letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-sans)', marginBottom: 5, letterSpacing: '0.04em' }}>
               {timeAgo(active.pubDate)}
             </div>
           )}
@@ -386,14 +386,14 @@ function FootballPanel() {
     return same ? `Today · ${time}` : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ` · ${time}`
   }
   return (
-    <Card as="section" padding="none" className="home-panel">
-      <SectionHead icon={Trophy} accent="var(--success)" label="Football" to="/football" action="All matches" />
+    <Card as="section" padding="none" tone="football" className="home-panel">
+      <SectionHead icon={Trophy} accent="var(--tool-football)" label="Football" to="/football" action="All matches" />
       {loading && !m && <div style={{ display: 'grid', gap: 10 }}><Skeleton h={12} w="40%" /><Skeleton h={36} /></div>}
       {!loading && !m && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{error ? "Couldn't load matches." : 'No matches today.'}</div>}
       {m && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.7rem' }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{m.league}</span>
+            <span style={{ fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{m.league}</span>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               color: m.status === 'in' ? 'var(--danger)' : m.status === 'post' ? 'var(--text-muted)' : 'var(--accent-text)',
@@ -407,7 +407,7 @@ function FootballPanel() {
               {m.homeLogo && <img src={m.homeLogo} alt="" style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }} />}
               <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.home}</span>
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
               {m.status === 'pre' ? 'vs' : `${m.homeScore ?? 0} – ${m.awayScore ?? 0}`}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', justifyContent: 'flex-end', minWidth: 0 }}>
@@ -426,8 +426,8 @@ function RadioPanel() {
   const last   = readJSON('lr:last:v1', null)
   const recent = readJSON('lr:recents:v1', [])
   return (
-    <Card as="section" padding="none" className="home-panel">
-      <SectionHead icon={Radio} accent="var(--pink)" label="Live Radio" to="/radio" action="Open player" />
+    <Card as="section" padding="none" tone="radio" className="home-panel">
+      <SectionHead icon={Radio} accent="var(--tool-radio)" label="Live Radio" to="/radio" action="Open player" />
       {!last && (
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           No station yet — pick one in <Link to="/radio" style={{ color: 'var(--accent-text)' }}>Live Radio</Link>.
@@ -435,7 +435,7 @@ function RadioPanel() {
       )}
       {last && (
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
             Last played
           </div>
           <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -484,8 +484,8 @@ function LanguagePanel() {
   const streaks = useMemo(() => readLanguageStreaks(), [])
   const top = streaks[0]
   return (
-    <Card as="section" padding="none" className="home-panel">
-      <SectionHead icon={BookOpen} accent="var(--warning)" label="Language" to="/language" action="Open planner" />
+    <Card as="section" padding="none" tone="language" className="home-panel">
+      <SectionHead icon={BookOpen} accent="var(--tool-language)" label="Language" to="/language" action="Open planner" />
       {!top && (
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           No plans yet — create one in <Link to="/language" style={{ color: 'var(--accent-text)' }}>Language Planner</Link>.
@@ -494,7 +494,7 @@ function LanguagePanel() {
       {top && (
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <span style={{ fontSize: '2rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--warning)', lineHeight: 1 }}>
+            <span style={{ fontSize: '2rem', fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--tool-language)', lineHeight: 1 }}>
               {top.current}
             </span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -647,13 +647,13 @@ export default function Home() {
       {/* Hero — greeting + weather inline */}
       <Card padding="none" className={`home-panel home-hero hero-tod hero-${period}`}>
         <div style={{ minWidth: 0, flex: '1 1 320px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             <Sparkles size={11} /> {dateLabel} · {timeLabel}
           </div>
-          <h1 style={{ fontSize: 'clamp(1.8rem, 3.4vw, 2.7rem)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0, margin: 0 }}>
+          <h1 style={{ fontSize: 'clamp(2rem, 3.6vw, 2.9rem)', lineHeight: 1.02, fontFamily: 'var(--font-sans)', fontWeight: 750, letterSpacing: '-0.045em', margin: 0 }}>
             {hello}
           </h1>
-          <div style={{ minHeight: '1.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(0.95rem, 1.4vw, 1.12rem)', fontWeight: 700 }}>
+          <div style={{ minHeight: '1.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.95rem, 1.4vw, 1.12rem)', fontWeight: 700 }}>
             <span className="gradient-text">{typed}</span>
             <span style={{ width: 8, height: '1.05em', borderRadius: 2, background: 'var(--accent-purple)', animation: 'home-pulse 1.1s ease-in-out infinite' }} />
           </div>

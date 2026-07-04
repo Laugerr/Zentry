@@ -33,7 +33,7 @@ export default class PageErrorBoundary extends Component {
           }}>
             <AlertCircle size={26} strokeWidth={1.8} />
           </div>
-          <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '1.05rem', marginBottom: '0.5rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.05rem', marginBottom: '0.5rem' }}>
             This tool hit a snag
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem', lineHeight: 1.5, wordBreak: 'break-word' }}>

@@ -44,7 +44,7 @@ const iconBadge = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.6rem',
 }
 const titleStyle = {
-  fontFamily: "'JetBrains Mono', monospace", fontSize: '0.95rem', fontWeight: 600,
+  fontFamily: 'var(--font-sans)', fontSize: '0.95rem', fontWeight: 600,
   color: 'var(--text-primary)',
 }
 const hintStyle = {
