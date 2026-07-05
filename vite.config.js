@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-// Set base to your GitHub repo name for GitHub Pages deployment
-// e.g. if your repo is github.com/username/life-dashboard, set base: '/life-dashboard/'
+// Deployed on Vercel at the domain root (vercel.json rewrites every path to
+// index.html for client-side routing), so base stays '/'.
 export default defineConfig({
   plugins: [
     react(),

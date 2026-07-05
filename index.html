@@ -38,9 +38,13 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3EFE8" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131210" />
 
-    <!-- Resolve the theme before first paint so there's no light/dark flash.
-         'auto' (the default) follows the OS; Layout.jsx keeps it in sync after. -->
+    <!-- Runs before any module:
+         1. Old links used hash routing (/#/news) — rewrite to the clean path
+            before the router (created at import time) reads the URL.
+         2. Resolve the theme before first paint so there's no light/dark flash.
+            'auto' (the default) follows the OS; useTheme keeps it in sync. -->
     <script>
+      if (location.hash.indexOf('#/') === 0) history.replaceState(null, '', location.hash.slice(1))
       try {
         var p = localStorage.getItem('zentry:theme')
         document.documentElement.dataset.theme = p === 'light' || p === 'dark' ? p

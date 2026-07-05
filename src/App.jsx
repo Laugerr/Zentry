@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 import PageErrorBoundary from './components/PageErrorBoundary'
@@ -33,23 +33,30 @@ function Page({ children }) {
   )
 }
 
-// App uses HashRouter so GitHub Pages works without server-side routing.
-// To add a new tool: import it here and add a <Route> + a nav entry in Layout.jsx.
+// Clean URLs (/news, not /#/news). Vercel rewrites every path to index.html
+// (vercel.json) and the service worker falls back to it offline. A data router
+// (rather than <BrowserRouter>) is what enables `viewTransition` on NavLinks.
+// To add a new tool: add a route here + a nav entry in Layout.jsx.
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      { index: true,      element: <Navigate to="/home" replace /> },
+      { path: 'home',     element: <Page><Home /></Page> },
+      { path: 'news',     element: <Page><NewsTracker /></Page> },
+      { path: 'language', element: <Page><LanguagePlanner /></Page> },
+      { path: 'radio',    element: <Page><LiveRadio /></Page> },
+      { path: 'football', element: <Page><FootballToday /></Page> },
+      { path: '*',        element: <Navigate to="/home" replace /> },
+    ],
+  },
+])
+
 export default function App() {
   return (
     <ToastProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/home" replace />} />
-            <Route path="home"     element={<Page><Home /></Page>} />
-            <Route path="news"     element={<Page><NewsTracker /></Page>} />
-            <Route path="language" element={<Page><LanguagePlanner /></Page>} />
-            <Route path="radio"    element={<Page><LiveRadio /></Page>} />
-            <Route path="football" element={<Page><FootballToday /></Page>} />
-          </Route>
-        </Routes>
-      </HashRouter>
+      <RouterProvider router={router} />
     </ToastProvider>
   )
 }

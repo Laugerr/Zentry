@@ -6,7 +6,10 @@ import {
 } from 'lucide-react'
 
 // Static command catalogue — tools + deep-links into specific tool sections.
-// Adding a new tool? Drop it here.
+// Adding a new tool? Drop it here. Each row's icon chip takes the tool colour
+// of the page it opens (TONE_BY_PATH), same as the sidebar.
+const TONE_BY_PATH = { '/home': 'ink', '/news': 'news', '/football': 'football', '/radio': 'radio', '/language': 'language' }
+
 const COMMANDS = [
   // Tools
   { id: 'tool-home',     group: 'Tools', icon: HomeIcon,  label: 'Home',             hint: 'Daily dashboard',                 path: '/home',     keywords: 'overview dashboard start' },
@@ -75,7 +78,7 @@ export default function CommandPalette({ open, onClose }) {
 
   function run(cmd) {
     onClose()
-    navigate(cmd.path)
+    navigate(cmd.path, { viewTransition: true })
   }
 
   function onInputKey(e) {
@@ -98,16 +101,16 @@ export default function CommandPalette({ open, onClose }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--backdrop)', backdropFilter: 'blur(4px)', zIndex: 500 }} />
-      <div style={{
-        position: 'fixed', top: '15vh', left: '50%', transform: 'translateX(-50%)',
-        width: 'min(560px, 92vw)', zIndex: 501,
-        background: 'var(--bg-secondary)', border: '1px solid var(--border-accent)',
-        borderRadius: 14, boxShadow: 'var(--shadow-pop), 0 0 40px var(--glow-purple)',
-        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh',
+      <div role="dialog" aria-modal="true" aria-label="Search" style={{
+        position: 'fixed', top: '12vh', left: '50%', transform: 'translateX(-50%)',
+        width: 'min(580px, 92vw)', zIndex: 501,
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-pop)',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '72vh',
       }}>
         {/* Search row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--border)' }}>
-          <Search size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.15rem', borderBottom: '1px solid var(--border)' }}>
+          <Search size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <input
             ref={inputRef}
             type="text"
@@ -117,14 +120,14 @@ export default function CommandPalette({ open, onClose }) {
             placeholder="Jump to a tool or action…"
             style={{
               flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: 'var(--text-primary)', fontSize: '0.95rem', fontFamily: 'var(--font-sans)',
+              color: 'var(--text-primary)', fontSize: '1.05rem', fontFamily: 'var(--font-sans)',
             }}
           />
           <kbd style={kbdStyle}>ESC</kbd>
         </div>
 
         {/* Results */}
-        <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '0.4rem 0.4rem 0.6rem' }}>
+        <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 0.5rem 0.6rem' }}>
           {results.length === 0 && (
             <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               No matches for <strong style={{ color: 'var(--text-primary)' }}>"{query}"</strong>
@@ -135,13 +138,14 @@ export default function CommandPalette({ open, onClose }) {
             if (!items?.length) return null
             return (
               <div key={group} style={{ marginBottom: '0.3rem' }}>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.85rem 0.35rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0.55rem 0.75rem 0.4rem' }}>
                   {group}
                 </div>
                 {items.map((cmd) => {
                   const idx = runningIdx++
                   const active = idx === activeIdx
                   const Icon = cmd.icon
+                  const tone = TONE_BY_PATH[cmd.path] ?? 'neutral'
                   return (
                     <button
                       key={cmd.id}
@@ -150,25 +154,20 @@ export default function CommandPalette({ open, onClose }) {
                       onClick={() => run(cmd)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
-                        textAlign: 'left', padding: '0.55rem 0.85rem', borderRadius: 8,
-                        background: active ? 'var(--accent-soft)' : 'transparent',
-                        border: '1px solid ' + (active ? 'var(--border-accent)' : 'transparent'),
-                        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        textAlign: 'left', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)',
+                        background: active ? 'var(--surface-2)' : 'transparent',
+                        border: '1px solid ' + (active ? 'var(--border)' : 'transparent'),
+                        color: 'var(--text-primary)',
                         cursor: 'pointer', transition: 'background 0.1s',
                       }}>
-                      <span style={{
-                        width: 30, height: 30, borderRadius: 7, flexShrink: 0,
-                        background: active ? 'var(--accent-soft)' : 'var(--input-bg)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: active ? 'var(--accent-text)' : 'var(--text-secondary)',
-                      }}>
-                        <Icon size={14} strokeWidth={1.8} />
+                      <span className={`nav-chip nav-chip-${tone}`} style={{ width: 34, height: 34 }} aria-hidden="true">
+                        <Icon size={17} strokeWidth={2} />
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{cmd.label}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.05rem' }}>{cmd.hint}</div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 600 }}>{cmd.label}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.05rem' }}>{cmd.hint}</div>
                       </div>
-                      <ArrowRight size={12} style={{ color: active ? 'var(--accent-text)' : 'var(--text-muted)', flexShrink: 0, opacity: active ? 1 : 0.4 }} />
+                      <ArrowRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0, opacity: active ? 1 : 0 }} />
                     </button>
                   )
                 })}
@@ -178,7 +177,7 @@ export default function CommandPalette({ open, onClose }) {
         </div>
 
         {/* Footer hints */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.55rem 1rem', borderTop: '1px solid var(--border)', fontSize: '0.68rem', color: 'var(--text-muted)', background: 'var(--input-bg)' }}>
+        <div className="palette-foot" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.6rem 1.1rem', borderTop: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--surface-2)' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
             <kbd style={kbdStyle}><ArrowUp size={9} /></kbd>
             <kbd style={kbdStyle}><ArrowDown size={9} /></kbd>
@@ -200,7 +199,7 @@ export default function CommandPalette({ open, onClose }) {
 const kbdStyle = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   minWidth: 18, height: 18, padding: '0 4px',
-  background: 'var(--input-bg-hover)', border: '1px solid var(--border)',
-  borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: '0.62rem',
+  background: 'var(--bg-card)', border: '1px solid var(--border)',
+  borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: '0.7rem',
   fontWeight: 600, color: 'var(--text-secondary)',
 }
