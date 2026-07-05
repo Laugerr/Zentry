@@ -4,6 +4,7 @@ import {
   Flame, Check, X, AlertCircle, Eye, EyeOff, ArrowLeft, Settings,
   Calendar, Layers, BarChart2, Undo2, Tag, Moon, Search,
 } from 'lucide-react'
+import { EmptyState as EmptyNotice } from '../components/states'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const LEARN_STEPS         = [1, 10]
@@ -1623,7 +1624,11 @@ export default function LanguagePlanner() {
       {tab === 'today' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <WordOfDay cards={cards} />
-          {dueByDeck.length === 0 ? (
+          {dueByDeck.length === 0 && decks.length === 0 ? (
+            <div style={panel}>
+              <EmptyNotice art="decks" title="No decks yet" hint="Create a deck or import an .apkg to get started." />
+            </div>
+          ) : dueByDeck.length === 0 ? (
             <div style={{ ...panel, textAlign: 'center', padding: '2.5rem 2rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>✅</div>
               <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Nothing due right now</div>
@@ -1667,7 +1672,11 @@ export default function LanguagePlanner() {
               {gridView ? <Layers size={14} /> : <BarChart2 size={14} style={{ transform: 'rotate(90deg)' }} />}
             </button>
           </div>
-          {decks.length === 0 && <div style={{ ...panel, textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No decks yet.</div>}
+          {decks.length === 0 && (
+            <div style={panel}>
+              <EmptyNotice art="decks" title="No decks yet" hint="Create one above, or import an Anki .apkg file." />
+            </div>
+          )}
           {gridView
             ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
                 {decks.map(deck => <DeckGridCard key={deck.id} deck={deck} cards={cards} onReview={setReviewing} onEdit={setEditing} />)}

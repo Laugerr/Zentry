@@ -5,7 +5,7 @@ import {
   Search, Star, ChevronDown, ChevronLeft, ChevronRight, Trophy,
   Zap, Calendar, Filter, X,
 } from 'lucide-react'
-import { InlineError } from '../components/states'
+import { InlineError, EmptyState as EmptyNotice } from '../components/states'
 
 // ─── League catalogue ─────────────────────────────────────────────────────────
 
@@ -1013,6 +1013,11 @@ export default function FootballToday() {
 
 function EmptyState({ query, status, message, icon }) {
   const hasFilters = !!query || status !== 'all'
+  // A genuinely empty day gets the illustration; a filtered-out list keeps the
+  // compact text so it's clear the filters are the reason.
+  if (!hasFilters && !icon) {
+    return <EmptyNotice art="matches" title={message || 'No matches today'} hint="Rest day — try another date with the arrows above." />
+  }
   return (
     <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-muted)' }}>
       <div style={{ fontSize: '2.5rem', marginBottom: '0.6rem' }}>{icon || '⚽'}</div>

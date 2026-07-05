@@ -923,6 +923,21 @@
   :root { --bottom-nav-h: 56px; }
 }
 
+/* ── Brand: logo + illustrations ──────────────────────────────────────── */
+@layer components {
+  .logo { display: inline-flex; align-items: center; gap: calc(var(--logo-size) * 0.32); }
+  .logo-word {
+    font-family: var(--font-sans);
+    font-size: calc(var(--logo-size) * 0.72);
+    font-weight: 750;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: var(--text-primary);
+  }
+  .illo { display: block; flex-shrink: 0; }
+  .illo svg { display: block; width: 100%; height: 100%; }
+}
+
 /* ── Home page (pages/Home.jsx) ─────────────────────────────────────────── */
 @layer components {
   .home-shell {

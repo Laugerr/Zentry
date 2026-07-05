@@ -12,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'robots.txt'],
       manifest: {
         name: 'Zentry — Personal Life Dashboard',
         short_name: 'Zentry',
@@ -23,9 +23,12 @@ export default defineConfig({
         start_url: '.',
         scope: '.',
         icons: [
-          // Only an SVG favicon ships in /public — Chrome's install banner prefers PNGs,
-          // but the SVG works for SW caching and most browsers' app shells.
-          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          // PNGs for install prompts / home screens (rendered from the Bento Z mark).
+          // The maskable one has extra padding so Android's circle/squircle crop is safe.
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
       },
       workbox: {

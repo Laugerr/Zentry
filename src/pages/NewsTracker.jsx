@@ -1041,12 +1041,9 @@ function UnifiedList({ articles, loading, search, category, readSet, bookmarkSet
 
 function EmptyState({ search, category }) {
   const catMeta = CATEGORIES.find((c) => c.id === category)
-  return (
-    <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-      <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{search ? '🔍' : catMeta?.emoji}</div>
-      {search ? <>No matches for <strong style={{ color: 'var(--text-primary)' }}>"{search}"</strong></> : <>No {catMeta?.label} articles right now.</>}
-    </div>
-  )
+  return search
+    ? <EmptyNotice icon={Search} title={`No matches for “${search}”`} hint="Try a different word, or clear the search." />
+    : <EmptyNotice icon={Newspaper} title={`No ${catMeta?.label} articles right now`} hint="Feeds refresh every 5 minutes — or try another category." />
 }
 
 // ─── Bookmarks (bottom sheet on phones, dialog on larger screens) ────────────
@@ -1057,7 +1054,7 @@ function BookmarksPanel({ open, bookmarks, onClose, onRemove, onClear }) {
       title={`Bookmarks${bookmarks.length ? ` · ${bookmarks.length}` : ''}`}
       footer={bookmarks.length > 0 && <Button variant="danger" size="sm" onClick={onClear}>Clear all</Button>}>
       {bookmarks.length === 0 ? (
-        <EmptyNotice icon={Bookmark} title="No bookmarks yet" hint="Tap the bookmark icon on any article to save it here." />
+        <EmptyNotice art="bookmarks" title="No bookmarks yet" hint="Tap the bookmark icon on any article to save it here." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {bookmarks.map((b) => (

@@ -2,6 +2,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Home as HomeIcon, BookOpen, Newspaper, Radio, Trophy, Search, Command, Sun, Moon, WifiOff, LayoutGrid, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CommandPalette from './CommandPalette'
+import { Logo } from './Logo'
 import { Button, IconButton, Sheet, Tabs } from './ui'
 import { useOnline } from '../hooks/useOnline'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
@@ -103,19 +104,11 @@ export default function Layout() {
         }}>
           {/* Logo row */}
           {isDesktop ? (
-            <div style={{ marginBottom: '1.75rem', paddingLeft: '0.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <img src="/favicon.svg" alt="Zentry" style={{ width: 28, height: 28, flexShrink: 0 }} />
-                <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 750, fontSize: '1.1rem', color: 'var(--text-primary)', letterSpacing: '-0.05em' }}>
-                  zentry
-                </span>
-              </div>
-              <div style={{ marginTop: '0.35rem', paddingLeft: '2.4rem', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
-                personal dashboard
-              </div>
+            <div style={{ marginBottom: '1.75rem', padding: '0.25rem 0.4rem' }}>
+              <Logo size={30} wordmark />
             </div>
           ) : (
-            <img src="/favicon.svg" alt="Zentry" style={{ width: 28, height: 28, margin: '0.25rem auto 1.5rem' }} />
+            <div style={{ margin: '0.25rem auto 1.5rem' }}><Logo size={30} /></div>
           )}
 
           {/* Section label */}
@@ -154,7 +147,7 @@ export default function Layout() {
           gap: '0.75rem',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, overflow: 'hidden' }}>
-            {isMobile && <img src="/favicon.svg" alt="" style={{ width: 22, height: 22, flexShrink: 0 }} />}
+            {isMobile && <Logo size={24} />}
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: isMobile ? '0.9rem' : '0.8rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
               {activeNav?.label ?? 'Dashboard'}
             </span>

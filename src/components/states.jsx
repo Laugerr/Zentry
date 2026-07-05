@@ -1,16 +1,21 @@
 import { AlertCircle, RefreshCw, Inbox } from 'lucide-react'
 import { Button } from './ui'
+import { Illustration } from './Illustration'
+import { useOnline } from '../hooks/useOnline'
 
 // Shared presentation for the "no data" and "fetch failed" states.
 // Every tool rolls its own fetch logic; these give them one consistent look
 // so a failure or an empty result feels the same across the whole app.
 
-export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
+// `art` swaps the icon badge for an illustration (see Illustration.jsx).
+export function EmptyState({ icon: Icon = Inbox, art, title, hint, action }) {
   return (
     <div style={wrap}>
-      <div style={{ ...iconBadge, background: 'var(--accent-soft)', color: 'var(--accent-text)' }}>
-        <Icon size={24} strokeWidth={1.8} />
-      </div>
+      {art ? <div style={{ marginBottom: '0.6rem' }}><Illustration name={art} /></div> : (
+        <div style={{ ...iconBadge, background: 'var(--accent-soft)', color: 'var(--accent-text)' }}>
+          <Icon size={24} strokeWidth={1.8} />
+        </div>
+      )}
       <div style={titleStyle}>{title}</div>
       {hint && <div style={hintStyle}>{hint}</div>}
       {action && <div style={{ marginTop: '1rem' }}>{action}</div>}
@@ -18,14 +23,19 @@ export function EmptyState({ icon: Icon = Inbox, title, hint, action }) {
   )
 }
 
+// When the device is offline the failure is almost always "no network", so
+// say that (with the offline illustration) instead of a raw fetch error.
 export function InlineError({ message = 'Something went wrong.', onRetry }) {
+  const online = useOnline()
   return (
     <div style={wrap} role="alert">
-      <div style={{ ...iconBadge, background: 'var(--danger-soft)', color: 'var(--danger)' }}>
-        <AlertCircle size={24} strokeWidth={1.8} />
-      </div>
-      <div style={titleStyle}>Couldn’t load this</div>
-      <div style={hintStyle}>{message}</div>
+      {online ? (
+        <div style={{ ...iconBadge, background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+          <AlertCircle size={24} strokeWidth={1.8} />
+        </div>
+      ) : <div style={{ marginBottom: '0.6rem' }}><Illustration name="offline" /></div>}
+      <div style={titleStyle}>{online ? 'Couldn’t load this' : 'You’re offline'}</div>
+      <div style={hintStyle}>{online ? message : 'Reconnect and tap Retry to load the latest.'}</div>
       {onRetry && (
         <Button icon={RefreshCw} size="sm" onClick={onRetry} style={{ marginTop: '1rem' }}>
           Retry
@@ -44,7 +54,7 @@ const iconBadge = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.6rem',
 }
 const titleStyle = {
-  fontFamily: 'var(--font-sans)', fontSize: '0.95rem', fontWeight: 600,
+  fontFamily: 'var(--font-sans)', fontSize: '1rem', fontWeight: 650, letterSpacing: '-0.02em',
   color: 'var(--text-primary)',
 }
 const hintStyle = {

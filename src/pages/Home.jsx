@@ -6,6 +6,7 @@ import {
   Sparkles, Wind, Droplets,
 } from 'lucide-react'
 import { Card, Skeleton } from '../components/ui'
+import { Illustration } from '../components/Illustration'
 import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
 
@@ -429,8 +430,11 @@ function RadioPanel() {
     <Card as="section" padding="none" tone="radio" className="home-panel">
       <SectionHead icon={Radio} accent="var(--tool-radio)" label="Live Radio" to="/radio" action="Open player" />
       {!last && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          No station yet — pick one in <Link to="/radio" style={{ color: 'var(--accent-text)' }}>Live Radio</Link>.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <Illustration name="radio" width={88} />
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            No station yet — pick one in <Link to="/radio" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Live Radio</Link>.
+          </div>
         </div>
       )}
       {last && (
