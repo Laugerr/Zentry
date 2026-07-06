@@ -7,6 +7,8 @@ import { IconButton, Sheet, Tabs } from './ui'
 import { useOnline } from '../hooks/useOnline'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useTheme } from '../hooks/useTheme'
+import { MiniPlayer } from '../radio/NowPlaying'
+import { useRadio } from '../radio/radio-context'
 
 // `tone` picks the tool colour for the nav chip ('ink' = neutral). `short` is
 // the label in the sidebar and phone tab bar; `label` is the full name. To add
@@ -70,6 +72,12 @@ export default function Layout() {
   const { pref, theme, setPref }      = useTheme()
   const online                        = useOnline()
   const mainRef                       = useRef(null)
+  const { station }                   = useRadio()
+
+  // Lets toasts float above the phone/tablet mini-player while it's showing
+  useEffect(() => {
+    document.documentElement.style.setProperty('--mini-h', station && !isDesktop ? '72px' : '0px')
+  }, [station, isDesktop])
 
   // Header toggle picks the opposite of what's showing (leaving 'auto')
   const toggleTheme = () => setPref(theme === 'light' ? 'dark' : 'light')
@@ -129,8 +137,9 @@ export default function Layout() {
             ))}
           </nav>
 
-          {/* Bottom: theme. The radio mini-player docks above this (Phase 4). */}
+          {/* Bottom: now-playing card (desktop) + theme */}
           <div className="sidebar-foot">
+            {isDesktop && <MiniPlayer variant="card" />}
             {isDesktop
               ? <Tabs label="Theme" size="sm" block value={pref} onChange={setPref} options={THEME_OPTIONS} />
               : <IconButton icon={theme === 'light' ? Moon : Sun} label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'} variant="secondary" onClick={toggleTheme} />}
@@ -186,6 +195,9 @@ export default function Layout() {
             <Outlet />
           </div>
         </main>
+
+        {/* Mini-player — phones (above the tab bar) and tablets */}
+        {!isDesktop && <MiniPlayer variant="bar" />}
 
         {/* ── Bottom tab bar (phones) — part of the flex column, not fixed,
             so it can never cover page content. ── */}

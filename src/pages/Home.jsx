@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom'
 import {
   Newspaper, Radio, Trophy, BookOpen,
   ArrowRight, Flame, MapPin,
-  Sparkles, Wind, Droplets,
+  Sparkles, Wind, Droplets, Play, Pause,
 } from 'lucide-react'
 import { Card, Skeleton } from '../components/ui'
 import { Illustration } from '../components/Illustration'
+import { useRadio } from '../radio/radio-context'
+import { RadioArt } from '../radio/NowPlaying'
+import { stationSubtitle } from '../radio/stations'
 import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
-const readJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k) ?? '') ?? fb } catch { return fb } }
 const timeAgo  = (iso) => {
   if (!iso) return ''
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -424,12 +426,16 @@ function FootballPanel() {
 
 // ─── Radio ────────────────────────────────────────────────────────────────────
 function RadioPanel() {
-  const last   = readJSON('lr:last:v1', null)
-  const recent = readJSON('lr:recents:v1', [])
+  const radio = useRadio()
+  const current = radio.station ?? radio.lastStation
+  const playing = radio.station && (radio.status === 'playing' || radio.status === 'loading')
+  // Recently played, minus whatever is showing as the main station
+  const others = radio.recents.filter((r) => r.stationuuid !== current?.stationuuid).slice(0, 2)
+
   return (
     <Card as="section" padding="none" tone="radio" className="home-panel">
-      <SectionHead icon={Radio} accent="var(--tool-radio)" label="Live Radio" to="/radio" action="Open player" />
-      {!last && (
+      <SectionHead icon={Radio} accent="var(--tool-radio)" label={radio.station ? 'Now playing' : 'Live Radio'} to="/radio" action="Browse" />
+      {!current && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
           <Illustration name="radio" width={88} />
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
@@ -437,22 +443,32 @@ function RadioPanel() {
           </div>
         </div>
       )}
-      {last && (
+      {current && (
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-            Last played
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <RadioArt station={current} status={radio.station ? radio.status : 'paused'} size={56} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {!radio.station && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Last played</div>}
+              <div style={{ fontSize: '1rem', fontWeight: 650, letterSpacing: '-0.02em', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {current.name ?? 'Unknown station'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {stationSubtitle(current) || 'Live radio'}
+              </div>
+            </div>
+            <button type="button" className="np-play" style={{ width: 48, height: 48, boxShadow: 'none' }}
+              onClick={radio.toggle} aria-label={playing ? 'Pause' : radio.station ? 'Play' : `Resume ${current.name}`}>
+              {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
+            </button>
           </div>
-          <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {last.name ?? 'Unknown station'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            {[last.countrycode, last.tags?.split(',')[0], last.bitrate ? `${last.bitrate} kbps` : null].filter(Boolean).join(' · ')}
-          </div>
-          {recent.length > 1 && (
-            <ul style={{ listStyle: 'none', display: 'grid', gap: 3, marginTop: '0.7rem', paddingTop: '0.55rem', borderTop: '1px solid var(--border)' }}>
-              {recent.slice(1, 3).map((r, i) => (
-                <li key={(r.stationuuid ?? r.name) + i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <span style={{ color: 'var(--text-muted)', marginRight: 6 }}>↳</span>{r.name}
+          {others.length > 0 && (
+            <ul style={{ listStyle: 'none', display: 'grid', gap: 2, marginTop: '0.8rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
+              {others.map((r) => (
+                <li key={r.stationuuid}>
+                  <button type="button" className="home-recent-station" onClick={() => radio.play(r, radio.recents)}>
+                    <Play size={12} fill="currentColor" aria-hidden="true" />
+                    <span>{r.name}</span>
+                  </button>
                 </li>
               ))}
             </ul>

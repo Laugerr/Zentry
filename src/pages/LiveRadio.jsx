@@ -1,23 +1,22 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
-import {
-  Play, Pause, Square, Volume2, VolumeX, Radio, Loader, AlertCircle,
-  Search, ChevronDown, Star, Clock, SkipForward, SkipBack, Shuffle,
-  Moon, List, MapIcon, X, Globe,
-} from 'lucide-react'
+import { Search, ChevronDown, Star, Clock, List, MapIcon, X, Globe } from 'lucide-react'
 import { useCachedFetch } from '../hooks/useCachedFetch'
 import { InlineError } from '../components/states'
+import { useRadio } from '../radio/radio-context'
+import { RADIO_LS as LS, readJSON, writeJSON, genreColor } from '../radio/stations'
 
 // World map topojson (hosted by observable/world-atlas, MIT license)
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-// Radio Browser API mirror list
+// Radio Browser API servers, tried in random order. nl1/at1/fi1 were retired
+// (no DNS) — `all.` is the project's round-robin name, so it keeps working
+// as servers come and go.
 const RB_HOSTS = [
   'https://de1.api.radio-browser.info',
-  'https://nl1.api.radio-browser.info',
-  'https://at1.api.radio-browser.info',
-  'https://fi1.api.radio-browser.info',
+  'https://de2.api.radio-browser.info',
+  'https://all.api.radio-browser.info',
 ]
 
 const GENRES = [
@@ -43,22 +42,6 @@ const GENRES = [
   { id: 'world',      label: 'World',       emoji: '🌍' },
   { id: 'kids',       label: 'Kids',        emoji: '🧸' },
 ]
-
-function genreColor(tags = '') {
-  const t = tags.toLowerCase()
-  if (t.includes('news') || t.includes('talk') || t.includes('speech'))                return '#f87171'
-  if (t.includes('jazz') || t.includes('blues'))                                        return '#fbbf24'
-  if (t.includes('classical') || t.includes('classic'))                                 return '#a78bfa'
-  if (t.includes('pop') || t.includes('top') || t.includes('hits'))                     return '#f472b6'
-  if (t.includes('rock') || t.includes('metal') || t.includes('punk') || t.includes('indie')) return '#fb923c'
-  if (t.includes('electronic') || t.includes('techno') || t.includes('house') || t.includes('edm') || t.includes('dance')) return '#22d3ee'
-  if (t.includes('ambient') || t.includes('chillout') || t.includes('lounge'))          return '#34d399'
-  if (t.includes('hiphop') || t.includes('hip-hop') || t.includes('rap') || t.includes('r&b') || t.includes('rnb')) return '#c084fc'
-  if (t.includes('reggae') || t.includes('latin') || t.includes('salsa'))               return '#fde047'
-  if (t.includes('country') || t.includes('folk'))                                      return '#84cc16'
-  if (t.includes('world') || t.includes('ethnic'))                                      return '#60a5fa'
-  return '#94a3b8'
-}
 
 // ─── Radio Browser fetching ───────────────────────────────────────────────────
 
@@ -130,256 +113,6 @@ function pingClick(uuid) {
   if (!uuid) return
   const host = shuffledHosts()[0]
   fetch(`${host}/json/url/${uuid}`, { mode: 'no-cors' }).catch(() => { /* ignore */ })
-}
-
-// ─── localStorage persistence ─────────────────────────────────────────────────
-
-const LS = {
-  favs:    'lr:favs:v1',
-  recents: 'lr:recents:v1',
-  volume:  'lr:volume:v1',
-  last:    'lr:last:v1',
-}
-const readJSON = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k) ?? '') ?? fallback } catch { return fallback } }
-const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* ignore */ } }
-
-// ─── Mini player bar ──────────────────────────────────────────────────────────
-
-function PlayerBar({ station, onStop, onNext, onPrev, onShuffle, volume, setVolume, isMobile }) {
-  const audioRef = useRef(null)
-  const [playing, setPlaying] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(false)
-  const [muted,   setMuted]   = useState(false)
-  const [sleep,   setSleep]   = useState(null) // { until: ms, total: ms }
-  const [sleepOpen, setSleepOpen] = useState(false)
-  const [tick, setTick] = useState(0)
-
-  // Load station on change
-  useEffect(() => {
-    setError(false); setLoading(true); setPlaying(false)
-    const audio = audioRef.current
-    if (!audio) return
-    audio.pause()
-    audio.src = station.url_resolved || station.url
-    audio.volume = volume
-    audio.muted  = muted
-    const onCanPlay = () => { setLoading(false); audio.play().then(() => setPlaying(true)).catch(() => setError(true)) }
-    const onError   = () => { setLoading(false); setError(true) }
-    audio.addEventListener('canplay', onCanPlay, { once: true })
-    audio.addEventListener('error',   onError,   { once: true })
-    audio.load()
-    return () => {
-      audio.removeEventListener('canplay', onCanPlay)
-      audio.removeEventListener('error',   onError)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station.stationuuid])
-
-  // Sleep timer ticker
-  useEffect(() => {
-    if (!sleep) return
-    const id = setInterval(() => {
-      setTick((t) => t + 1)
-      if (Date.now() >= sleep.until) {
-        audioRef.current?.pause()
-        setPlaying(false)
-        setSleep(null)
-        onStop()
-      }
-    }, 1000)
-    return () => clearInterval(id)
-  }, [sleep, onStop])
-
-  // Auto-skip on error after 3s
-  useEffect(() => {
-    if (!error) return
-    const id = setTimeout(() => { onNext?.() }, 3000)
-    return () => clearTimeout(id)
-  }, [error, onNext])
-
-  const togglePlay = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (playing) { audio.pause(); setPlaying(false) }
-    else { audio.play().then(() => setPlaying(true)).catch(() => setError(true)) }
-  }, [playing])
-
-  const handleVolume = (e) => {
-    const v = parseFloat(e.target.value)
-    setVolume(v)
-    if (audioRef.current) audioRef.current.volume = v
-    if (v > 0) setMuted(false)
-  }
-
-  const toggleMute = useCallback(() => {
-    setMuted((prev) => {
-      const next = !prev
-      if (audioRef.current) audioRef.current.muted = next
-      return next
-    })
-  }, [])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return
-      switch (e.key) {
-        case ' ':      e.preventDefault(); togglePlay(); break
-        case 'm': case 'M': toggleMute(); break
-        case 'n': case 'N': onNext?.();   break
-        case 'p': case 'P': onPrev?.();   break
-        case 's': case 'S': onShuffle?.(); break
-        case 'ArrowUp':
-          e.preventDefault()
-          setVolume((v) => {
-            const nv = Math.min(1, +(v + 0.05).toFixed(2))
-            if (audioRef.current) audioRef.current.volume = nv
-            return nv
-          })
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setVolume((v) => {
-            const nv = Math.max(0, +(v - 0.05).toFixed(2))
-            if (audioRef.current) audioRef.current.volume = nv
-            return nv
-          })
-          break
-        default: break
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [togglePlay, toggleMute, onNext, onPrev, onShuffle, setVolume])
-
-  const color = genreColor(station.tags)
-  const sleepRemaining = sleep ? Math.max(0, Math.ceil((sleep.until - Date.now()) / 1000)) : 0
-  void tick // force rerender hook
-
-  return (
-    <div style={{
-      // On mobile pin to the viewport so it's always visible once a station
-      // is playing — sticky inside a flex-column chain with soft heights
-      // behaved inconsistently (it ended up below the map, off-screen).
-      position: isMobile ? 'fixed' : 'sticky',
-      bottom: 0, left: 0, right: 0,
-      background: 'rgba(10,10,15,0.96)', backdropFilter: 'blur(12px)',
-      borderTop: `1px solid ${color}44`,
-      padding: '0.75rem 1.25rem',
-      display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
-      zIndex: 50,
-    }}>
-      <audio ref={audioRef} preload="none" />
-
-      {/* Station info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: '8px', flexShrink: 0,
-          background: `${color}22`, border: `1px solid ${color}55`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {loading ? <Loader size={16} color={color} style={{ animation: 'spin 0.8s linear infinite' }} />
-                   : error   ? <AlertCircle size={16} color="#f87171" />
-                              : <Radio size={16} color={color} style={{ animation: playing ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {station.name}
-          </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {[
-              station.country,
-              station.tags?.split(',')[0],
-              station.bitrate > 0 ? `${station.bitrate}kbps` : null,
-              station.codec,
-            ].filter(Boolean).join(' · ')}
-          </div>
-        </div>
-        {error && <span style={{ fontSize: '0.68rem', color: '#f87171', flexShrink: 0 }}>Skipping…</span>}
-      </div>
-
-      {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
-        <button onClick={onPrev} title="Previous (P)"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.2rem', display: 'flex' }}>
-          <SkipBack size={15} />
-        </button>
-
-        <button onClick={togglePlay} disabled={loading || error} title="Play/Pause (Space)"
-          style={{ width: 36, height: 36, borderRadius: '50%', border: `1px solid ${color}66`,
-            background: `${color}22`, color, cursor: loading || error ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {playing ? <Pause size={16} /> : <Play size={16} />}
-        </button>
-
-        <button onClick={onNext} title="Next (N)"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.2rem', display: 'flex' }}>
-          <SkipForward size={15} />
-        </button>
-
-        <button onClick={onShuffle} title="Shuffle (S)"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.2rem', display: 'flex' }}>
-          <Shuffle size={14} />
-        </button>
-
-        <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-
-        {/* Sleep timer */}
-        <div style={{ position: 'relative' }}>
-          <button onClick={(e) => { e.stopPropagation(); setSleepOpen((v) => !v) }}
-            title="Sleep timer"
-            style={{ background: sleep ? 'rgba(167,139,250,0.15)' : 'none', border: 'none', cursor: 'pointer',
-              color: sleep ? '#a78bfa' : 'var(--text-muted)', padding: '0.3rem 0.4rem', borderRadius: 6,
-              display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.68rem', fontWeight: 600 }}>
-            <Moon size={13} />
-            {sleep && <span style={{ fontFamily: 'var(--font-mono)' }}>
-              {Math.floor(sleepRemaining / 60)}:{String(sleepRemaining % 60).padStart(2, '0')}
-            </span>}
-          </button>
-          {sleepOpen && (
-            <div onClick={(e) => e.stopPropagation()} style={{
-              position: 'absolute', bottom: 'calc(100% + 6px)', right: 0,
-              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-              borderRadius: 10, padding: 4, minWidth: 140, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 200,
-            }}>
-              {[
-                { label: 'Off',        min: 0 },
-                { label: '15 minutes', min: 15 },
-                { label: '30 minutes', min: 30 },
-                { label: '60 minutes', min: 60 },
-                { label: '2 hours',    min: 120 },
-              ].map((o) => (
-                <button key={o.label}
-                  onClick={() => { setSleep(o.min > 0 ? { until: Date.now() + o.min * 60_000, total: o.min } : null); setSleepOpen(false) }}
-                  style={{ display: 'block', width: '100%', textAlign: 'left',
-                    padding: '0.4rem 0.6rem', background: 'transparent', border: 'none',
-                    color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', borderRadius: 6 }}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button onClick={toggleMute} title="Mute (M)"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '0.2rem' }}>
-          {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-        </button>
-
-        <input type="range" min="0" max="1" step="0.02" value={muted ? 0 : volume}
-          onChange={handleVolume} title="Volume (↑/↓)"
-          style={{ width: 80, accentColor: color, cursor: 'pointer' }} />
-
-        <button onClick={onStop} title="Stop"
-          style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)',
-            background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Square size={11} />
-        </button>
-      </div>
-    </div>
-  )
 }
 
 // ─── Memoized map marker ──────────────────────────────────────────────────────
@@ -464,7 +197,6 @@ export default function LiveRadio() {
   const [search,     setSearch]     = useState('')
   const [sort,       setSort]       = useState('popularity') // popularity | name | bitrate
   const [tooltip,    setTooltip]    = useState(null)
-  const [active,     setActive]     = useState(null)
   const [zoom,       setZoom]       = useState(1)
   const [center,     setCenter]     = useState([0, 20])
   const { isMobile } = useBreakpoint()
@@ -473,19 +205,15 @@ export default function LiveRadio() {
   const [showList,   setShowList]   = useState(true)
   const [nowPlaying, setNowPlaying] = useState(null) // { station, ts } — brief pill on mobile
   const [listTab,    setListTab]    = useState('all')        // all | favs | recents
-  const [volume,     setVolume]     = useState(() => {
-    const v = readJSON(LS.volume, 0.8)
-    return typeof v === 'number' && v >= 0 && v <= 1 ? v : 0.8
-  })
   const [favourites, setFavourites] = useState(() => readJSON(LS.favs, []))
-  const [recents,    setRecents]    = useState(() => readJSON(LS.recents, []))
   const mapRef = useRef(null)
+  // Playback lives in the app-wide RadioProvider so it survives leaving this
+  // page; here we only drive it. Recents / last station are kept there too.
+  const radio = useRadio()
+  const active  = radio.station
+  const recents = radio.recents
 
-  // Persistence
-  useEffect(() => { writeJSON(LS.volume, volume) }, [volume])
   useEffect(() => { writeJSON(LS.favs, favourites) }, [favourites])
-  useEffect(() => { writeJSON(LS.recents, recents) }, [recents])
-  useEffect(() => { if (active) writeJSON(LS.last, active) }, [active])
 
   // Observe theme so the map palette follows dark/light mode without a reload.
   const [theme, setTheme] = useState(() => typeof document !== 'undefined'
@@ -616,22 +344,15 @@ export default function LiveRadio() {
   }, [baseFiltered, listTab, favourites, recents, stations, sort, search, genre, country])
 
   const playStation = useCallback((station) => {
-    setActive(station)
+    // The visible list becomes the queue for next / previous / shuffle
+    radio.play(station, listData)
     setTooltip(null)
     pingClick(station.stationuuid)
     // Brief "now playing" pill (mostly for mobile where the player is below the fold).
     setNowPlaying({ station, ts: Date.now() })
     // Subtle haptic tick on devices that support it.
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8)
-    setRecents((prev) => {
-      const filtered = prev.filter((s) => s.stationuuid !== station.stationuuid)
-      const minimal = { stationuuid: station.stationuuid, name: station.name, country: station.country,
-        tags: station.tags, url: station.url, url_resolved: station.url_resolved,
-        bitrate: station.bitrate, codec: station.codec, geo_lat: station.geo_lat, geo_long: station.geo_long,
-        clickcount: station.clickcount, _lon: station._lon, _lat: station._lat, _color: station._color }
-      return [minimal, ...filtered].slice(0, 30)
-    })
-  }, [])
+  }, [radio, listData])
 
   // Stable marker callbacks so memoized StationMarker doesn't re-render on every state change.
   // On mobile we skip hover-tooltips entirely (they collide with the tap-to-play gesture
@@ -656,30 +377,26 @@ export default function LiveRadio() {
     })
   }, [])
 
-  // Next / Prev / Shuffle
-  const playlist = listData
-  const playAt = (idx) => {
-    if (!playlist.length) return
-    const i = ((idx % playlist.length) + playlist.length) % playlist.length
-    playStation(playlist[i])
-  }
-  const onNext    = useCallback(() => {
-    if (!active || !playlist.length) return
-    const i = playlist.findIndex((s) => s.stationuuid === active.stationuuid)
-    playAt((i < 0 ? 0 : i + 1))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, playlist])
-  const onPrev    = useCallback(() => {
-    if (!active || !playlist.length) return
-    const i = playlist.findIndex((s) => s.stationuuid === active.stationuuid)
-    playAt((i < 0 ? 0 : i - 1))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, playlist])
-  const onShuffle = useCallback(() => {
-    if (!playlist.length) return
-    playAt(Math.floor(Math.random() * playlist.length))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playlist])
+  // Keyboard shortcuts while a station is loaded (this page only — Space etc.
+  // would be surprising elsewhere). Media keys work everywhere via MediaSession.
+  useEffect(() => {
+    if (!radio.station) return
+    const onKey = (e) => {
+      if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      switch (e.key) {
+        case ' ':           e.preventDefault(); radio.toggle(); break
+        case 'm': case 'M': radio.toggleMute(); break
+        case 'n': case 'N': radio.next(); break
+        case 'p': case 'P': radio.prev(); break
+        case 's': case 'S': radio.shuffle(); break
+        case 'ArrowUp':     e.preventDefault(); radio.setVolume((v) => Math.min(1, +(v + 0.05).toFixed(2))); break
+        case 'ArrowDown':   e.preventDefault(); radio.setVolume((v) => Math.max(0, +(v - 0.05).toFixed(2))); break
+        default: break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [radio])
 
   const activeGenre   = GENRES.find((g) => g.id === genre)
   const activeCountry = countryOptions.find((c) => c.code === country)
@@ -763,7 +480,7 @@ export default function LiveRadio() {
       </div>
 
       {listTab === 'recents' && recents.length > 0 && (
-        <button onClick={() => setRecents([])}
+        <button onClick={radio.clearRecents}
           style={{ borderTop: '1px solid var(--border)', padding: '0.5rem', background: 'transparent',
             border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', flexShrink: 0 }}>
           <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />
@@ -1041,21 +758,6 @@ export default function LiveRadio() {
         {!isMobile && showList && listPanel}
       </div>
 
-      {/* Player */}
-      {active && (
-        <PlayerBar
-          station={active}
-          onStop={() => setActive(null)}
-          onNext={onNext}
-          onPrev={onPrev}
-          onShuffle={onShuffle}
-          volume={volume}
-          setVolume={setVolume}
-          isMobile={isMobile}
-        />
-      )}
-      {/* Spacer so fixed mobile player doesn't overlap the last bits of content */}
-      {active && isMobile && <div style={{ height: 92, flexShrink: 0 }} />}
 
       <style>{`
         @keyframes pulse-ring {

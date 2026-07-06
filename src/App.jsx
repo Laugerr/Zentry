@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 import PageErrorBoundary from './components/PageErrorBoundary'
 import { ToastProvider } from './components/ui'
+import { RadioProvider } from './radio/RadioProvider'
 
 // Lazy-load each tool so the initial bundle only ships what's visible on first paint.
 // react-simple-maps + the topojson atlas are heavy — splitting keeps that out of the
@@ -56,7 +57,10 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <ToastProvider>
-      <RouterProvider router={router} />
+      {/* Above the router so the stream survives page changes */}
+      <RadioProvider>
+        <RouterProvider router={router} />
+      </RadioProvider>
     </ToastProvider>
   )
 }
