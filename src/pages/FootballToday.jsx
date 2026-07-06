@@ -6,6 +6,8 @@ import {
   Zap, Calendar, Filter, X,
 } from 'lucide-react'
 import { InlineError, EmptyState as EmptyNotice } from '../components/states'
+import { formatTime } from '../settings/format'
+import { useSettings } from '../settings/store'
 
 // ─── League catalogue ─────────────────────────────────────────────────────────
 
@@ -200,7 +202,7 @@ function timeAgo(dateStr) {
 function matchTime(ev) {
   if (ev.state === 'in')   return ev.detail || ev.shortDetail
   if (ev.state === 'post') return ev.detail || 'FT'
-  try { return new Date(ev.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) } catch { return ev.shortDetail }
+  try { return formatTime(ev.date) } catch { return ev.shortDetail }
 }
 
 function sameDay(a, b) {
@@ -625,6 +627,7 @@ function StandingsView({ leagueId }) {
 const REFRESH_MS = 60 * 1000
 
 export default function FootballToday() {
+  useSettings() // subscribe: kickoff times re-render when the 12/24h setting changes
   const [tab,        setTab]        = useState('all')          // 'all' | 'favs' | league id
   const [view,       setView]       = useState('matches')      // 'matches' | 'standings'
   const [status,     setStatus]     = useState('all')          // 'all' | 'live' | 'pre' | 'post'
@@ -766,7 +769,7 @@ export default function FootballToday() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {lastFetch && !loading && isToday && (
             <span title="Next auto-refresh" style={{ fontSize: '0.63rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <Clock size={10} />{lastFetch.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <Clock size={10} />{formatTime(lastFetch)}
               <span style={{ color: 'var(--text-muted)', opacity: 0.6 }}>· {secondsUntilRefresh}s</span>
             </span>
           )}

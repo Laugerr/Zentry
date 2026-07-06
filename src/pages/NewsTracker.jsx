@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { InlineError, EmptyState as EmptyNotice } from '../components/states'
 import { Button, IconButton, Card, Tabs, Sheet, Skeleton, useToast } from '../components/ui'
+import { useSettings } from '../settings/store'
+import { formatTime, formatTemp, formatWind } from '../settings/format'
 
 // ─── Feed catalogue ───────────────────────────────────────────────────────────
 
@@ -257,7 +259,8 @@ function CountryStats({ countryCode }) {
   }, [countryCode, reloadTick])
 
   const tz = COUNTRY_TIMEZONES[countryCode]
-  const localTime = tz ? now.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : null
+  const [settings] = useSettings()
+  const localTime = tz ? formatTime(now, { timeZone: tz, seconds: true, settings }) : null
   const localDate = tz ? now.toLocaleDateString('en-GB', { timeZone: tz, weekday: 'short', day: '2-digit', month: 'short' }) : null
 
   if (loading) return (
@@ -323,8 +326,8 @@ function CountryStats({ countryCode }) {
         {weather && (
           <div style={{ background: 'var(--success-soft)', border: '1px solid color-mix(in srgb, var(--success) 25%, transparent)', borderRadius: '12px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--success)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>☁️ Weather · {capital}</span>
-            <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.15 }}>{weather.temperature}°C</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{wLabel} · 💨 {weather.windspeed} km/h</span>
+            <span style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.15 }}>{formatTemp(weather.temperature, settings)}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{wLabel} · 💨 {formatWind(weather.windspeed, settings)}</span>
           </div>
         )}
       </div>

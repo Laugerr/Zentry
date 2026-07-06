@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Home as HomeIcon, Newspaper, BookOpen, Radio, Trophy,
+  Search, Home as HomeIcon, Newspaper, BookOpen, Radio, Trophy, Settings as SettingsIcon,
   ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, Command,
 } from 'lucide-react'
 
@@ -17,6 +17,7 @@ const COMMANDS = [
   { id: 'tool-language', group: 'Tools', icon: BookOpen,  label: 'Language Planner', hint: 'Weekly learning tracker',         path: '/language', keywords: 'learn study vocabulary' },
   { id: 'tool-radio',    group: 'Tools', icon: Radio,     label: 'Live Radio',       hint: 'World radio map',                 path: '/radio',    keywords: 'stream music station listen' },
   { id: 'tool-football', group: 'Tools', icon: Trophy,    label: 'Football Today',   hint: 'Scores & fixtures',               path: '/football', keywords: 'soccer matches premier league scores' },
+  { id: 'tool-settings', group: 'Tools', icon: SettingsIcon, label: 'Settings',        hint: 'Units, city, backup & reset',     path: '/settings', keywords: 'preferences theme celsius fahrenheit clock city export import reset backup' },
 
   // Quick actions — open a tool with a specific intent (fragment hints post-navigate)
   { id: 'a-bookmarks',   group: 'Actions', icon: Newspaper, label: 'Open News bookmarks', hint: 'Saved articles', path: '/news',    keywords: 'saved star favourite' },

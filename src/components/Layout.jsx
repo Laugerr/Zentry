@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home as HomeIcon, BookOpen, Newspaper, Radio, Trophy, Search, Command, Sun, Moon, WifiOff, LayoutGrid, ChevronRight } from 'lucide-react'
+import { Home as HomeIcon, BookOpen, Newspaper, Radio, Trophy, Search, Command, Sun, Moon, WifiOff, LayoutGrid, ChevronRight, Settings as SettingsIcon } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import CommandPalette from './CommandPalette'
 import { Logo } from './Logo'
@@ -7,6 +7,8 @@ import { IconButton, Sheet, Tabs } from './ui'
 import { useOnline } from '../hooks/useOnline'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useTheme } from '../hooks/useTheme'
+import { useSettings } from '../settings/store'
+import { formatTime } from '../settings/format'
 import { MiniPlayer } from '../radio/NowPlaying'
 import { useRadio } from '../radio/radio-context'
 
@@ -50,6 +52,7 @@ function NavChip({ tone, icon: Icon, size = 28 }) {
 // the tick re-renders only this pill, not the whole layout.
 function Clock({ showDate }) {
   const [now, setNow] = useState(() => new Date())
+  const [settings]    = useSettings()
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
@@ -58,7 +61,7 @@ function Clock({ showDate }) {
     <span className="header-pill">
       {showDate && <span style={{ color: 'var(--text-muted)' }}>{now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
       <span className="mono" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-        {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        {formatTime(now, { seconds: true, settings })}
       </span>
     </span>
   )
@@ -105,7 +108,8 @@ export default function Layout() {
   }, [location.pathname])
 
   const activeNav  = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))
-  const moreActive = MORE_ITEMS.some((item) => item === activeNav)
+  const onSettings = location.pathname.startsWith('/settings')
+  const moreActive = onSettings || MORE_ITEMS.some((item) => item === activeNav)
   const isHome     = activeNav?.path === '/home'
 
   const openSearch = () => { setMoreOpen(false); setPaletteOpen(true) }
@@ -137,9 +141,19 @@ export default function Layout() {
             ))}
           </nav>
 
-          {/* Bottom: now-playing card (desktop) + theme */}
+          {/* Bottom: now-playing card (desktop), settings, theme */}
           <div className="sidebar-foot">
             {isDesktop && <MiniPlayer variant="card" />}
+            <NavLink
+              to="/settings"
+              viewTransition
+              aria-label={isTablet ? 'Settings' : undefined}
+              title={isTablet ? 'Settings' : undefined}
+              className={({ isActive }) => `nav-item${isTablet ? ' nav-item-icon' : ''}${isActive ? ' active' : ''}`}
+            >
+              <NavChip tone="neutral" icon={SettingsIcon} size={isTablet ? 32 : 28} />
+              {isDesktop && <span>Settings</span>}
+            </NavLink>
             {isDesktop
               ? <Tabs label="Theme" size="sm" block value={pref} onChange={setPref} options={THEME_OPTIONS} />
               : <IconButton icon={theme === 'light' ? Moon : Sun} label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'} variant="secondary" onClick={toggleTheme} />}
@@ -172,7 +186,7 @@ export default function Layout() {
         )}
         {isMobile && !isHome && (
           <header className="app-header app-header-phone">
-            <span className="phone-title">{activeNav?.short ?? 'Zentry'}</span>
+            <span className="phone-title">{onSettings ? 'Settings' : activeNav?.short ?? 'Zentry'}</span>
             <IconButton icon={Search} label="Search" variant="secondary" onClick={() => setPaletteOpen(true)} />
           </header>
         )}
@@ -239,6 +253,14 @@ export default function Layout() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <NavLink to="/settings" viewTransition className={({ isActive }) => `nav-item more-item${isActive ? ' active' : ''}`}>
+            <NavChip tone="neutral" icon={SettingsIcon} size={36} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', color: 'var(--text-primary)', fontWeight: 600 }}>Settings</span>
+              <span className="more-item-hint">Units, your city, backup & reset</span>
+            </span>
+            <ChevronRight size={18} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+          </NavLink>
           <button type="button" className="nav-item more-item" onClick={openSearch}>
             <NavChip tone="neutral" icon={Search} size={36} />
             <span style={{ flex: 1, textAlign: 'left', color: 'var(--text-primary)', fontWeight: 600 }}>Search</span>

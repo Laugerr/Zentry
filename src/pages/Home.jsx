@@ -12,6 +12,8 @@ import { RadioArt } from '../radio/NowPlaying'
 import { stationSubtitle } from '../radio/stations'
 import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
+import { useSettings } from '../settings/store'
+import { formatTemp, formatWind, formatTime } from '../settings/format'
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 const timeAgo  = (iso) => {
@@ -64,6 +66,7 @@ function SectionHead({ icon: Icon, accent = 'var(--accent-text)', label, to, act
 // ─── Weather (lives inside hero) ──────────────────────────────────────────────
 function HeroWeather() {
   const { data, error, loading } = useWeather()
+  const [settings] = useSettings()
   if (loading && !data) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 240 }}>
@@ -87,7 +90,7 @@ function HeroWeather() {
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
           <span style={{ fontSize: '1.85rem', fontFamily: 'var(--font-sans)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {data.temp}°
+            {formatTemp(data.temp, settings)}
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {WMO_LABEL[data.code] ?? '—'}
@@ -95,8 +98,8 @@ function HeroWeather() {
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
           {data.city && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><MapPin size={11} /> {data.city}</span>}
-          <span>H {data.hi}° · L {data.lo}°</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Wind size={11} /> {data.wind}</span>
+          <span>H {formatTemp(data.hi, settings)} · L {formatTemp(data.lo, settings)}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Wind size={11} /> {formatWind(data.wind, settings)}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Droplets size={11} /> {data.humidity}%</span>
         </div>
       </div>
@@ -380,12 +383,13 @@ const fetchNextMatch = async ({ signal }) => {
 
 function FootballPanel() {
   const { data: m, error, loading } = useCachedFetch('home:football', fetchNextMatch, { ttl: 5 * 60_000 })
+  const [settings] = useSettings()
   const kickoffLabel = (iso) => {
     if (!iso) return ''
     const d = new Date(iso)
     const now = new Date()
     const same = d.toDateString() === now.toDateString()
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const time = formatTime(d, { settings })
     return same ? `Today · ${time}` : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ` · ${time}`
   }
   return (
@@ -658,7 +662,8 @@ export default function Home() {
   const h         = now.getHours()
   const hello     = greet(h)
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-  const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const [settings] = useSettings()
+  const timeLabel = formatTime(now, { settings })
   const typed     = useTypewriter(getPhrases(h))
   const period    = getPeriod(h)
 
