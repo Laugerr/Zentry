@@ -9,10 +9,11 @@ import { useSyncExternalStore } from 'react'
 // units: 'auto' | 'c' | 'f'          temperature (+ wind: km/h or mph)
 // clock: 'auto' | '24' | '12'
 // city:  null (detect by IP) | { name, admin, country, lat, lon }
+// homeWidgets: null (default layout) | [{ id, on }] — see home/widgets.js
 
 const KEY       = 'zentry:settings:v1'
 const THEME_KEY = 'zentry:theme'
-const DEFAULTS  = { units: 'auto', clock: 'auto', city: null }
+const DEFAULTS  = { units: 'auto', clock: 'auto', city: null, homeWidgets: null }
 
 function load() {
   let saved = {}

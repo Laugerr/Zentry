@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { MapPin, Search, X, Download, Upload, Trash2, Navigation, Check } from 'lucide-react'
-import { Button, Card, IconButton, Sheet, Tabs, useToast } from '../components/ui'
+import { MapPin, Search, X, Download, Upload, Trash2, Navigation, Check, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'
+import { Button, Card, IconButton, Sheet, Switch, Tabs, useToast } from '../components/ui'
 import { Logo } from '../components/Logo'
 import { useTheme } from '../hooks/useTheme'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useSettings } from '../settings/store'
 import { formatTemp, formatTime, formatWind, tempUnit, uses12h } from '../settings/format'
 import { exportBackup, parseBackup, restoreBackup, resetAll, summarizeData } from '../settings/backup'
+import { resolveLayout, WIDGET_BY_ID } from '../home/widgets'
 import { version } from '../../package.json'
 
 function Row({ title, hint, children }) {
@@ -97,6 +98,40 @@ function CityPicker({ city, onChange }) {
   )
 }
 
+// ─── Home layout: show / hide + reorder ──────────────────────────────────────
+// ↑ / ↓ buttons rather than drag-and-drop: they work the same with touch,
+// mouse, keyboard and screen readers.
+function HomeLayoutEditor({ value, onChange }) {
+  const layout = resolveLayout(value)
+  const move = (i, dir) => {
+    const next = [...layout]
+    ;[next[i], next[i + dir]] = [next[i + dir], next[i]]
+    onChange(next)
+  }
+  const toggle = (i, on) => onChange(layout.map((w, j) => (j === i ? { ...w, on } : w)))
+
+  return (
+    <ol className="widget-list">
+      {layout.map((w, i) => {
+        const meta = WIDGET_BY_ID[w.id]
+        return (
+          <li key={w.id} className={`widget-row${w.on ? '' : ' is-off'}`}>
+            <div className="widget-order">
+              <IconButton icon={ArrowUp} label={`Move ${meta.label} up`} size="sm" disabled={i === 0} onClick={() => move(i, -1)} />
+              <IconButton icon={ArrowDown} label={`Move ${meta.label} down`} size="sm" disabled={i === layout.length - 1} onClick={() => move(i, 1)} />
+            </div>
+            <div className="settings-row-text" style={{ flex: 1 }}>
+              <div className="settings-row-title">{meta.label}</div>
+              <div className="settings-row-hint">{meta.hint}</div>
+            </div>
+            <Switch checked={w.on} label={`Show ${meta.label}`} onChange={(on) => toggle(i, on)} />
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function Settings() {
   const [settings, set] = useSettings()
@@ -158,6 +193,19 @@ export default function Settings() {
             { value: '24', label: '24h' }, { value: '12', label: '12h' }, { value: 'auto', label: 'Auto' },
           ]} />
         </Row>
+      </Section>
+
+      <Section title="Home">
+        <div className="settings-row-hint" style={{ margin: '-0.25rem 0 0.75rem' }}>
+          Choose which widgets Home shows, and in what order. The greeting always comes first.
+        </div>
+        <HomeLayoutEditor value={settings.homeWidgets} onChange={(homeWidgets) => set({ homeWidgets })} />
+        {settings.homeWidgets && (
+          <Button size="sm" variant="ghost" icon={RotateCcw} style={{ marginTop: '0.75rem' }}
+            onClick={() => { set({ homeWidgets: null }); toast('Home layout reset') }}>
+            Reset layout
+          </Button>
+        )}
       </Section>
 
       <Section title="Your city">

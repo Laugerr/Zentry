@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Newspaper, Radio, Trophy, BookOpen,
   ArrowRight, Flame, MapPin,
-  Sparkles, Wind, Droplets, Play, Pause,
+  Sparkles, Wind, Droplets, Play, Pause, Star,
 } from 'lucide-react'
 import { Card, Skeleton } from '../components/ui'
 import { Illustration } from '../components/Illustration'
@@ -14,6 +14,8 @@ import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
 import { useSettings } from '../settings/store'
 import { formatTemp, formatWind, formatTime } from '../settings/format'
+import { fetchScoreboard, pickFeatured, readFavTeams, fetchFavTeams, fixtureFor, describeFixture, byUrgency } from '../home/football'
+import { resolveLayout, WIDGET_BY_ID } from '../home/widgets'
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 const timeAgo  = (iso) => {
@@ -351,78 +353,121 @@ function HeadlinesPanel() {
 }
 
 // ─── Football ─────────────────────────────────────────────────────────────────
-const fetchNextMatch = async ({ signal }) => {
-  const url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard'
-  const r = await fetch(url, { signal })
-  if (!r.ok) throw new Error('espn')
-  const j = await r.json()
-  const events = (j.events ?? []).map((e) => {
-    const c = e.competitions?.[0] ?? {}
-    const [home, away] = c.competitors ?? []
-    return {
-      id: e.id,
-      date: e.date,
-      league: e.league?.name ?? c.notes?.[0]?.headline ?? 'Match',
-      status: e.status?.type?.state ?? 'pre',
-      statusDetail: e.status?.type?.shortDetail ?? '',
-      home: home?.team?.shortDisplayName ?? home?.team?.displayName ?? '—',
-      away: away?.team?.shortDisplayName ?? away?.team?.displayName ?? '—',
-      homeScore: home?.score ?? null,
-      awayScore: away?.score ?? null,
-      homeLogo: home?.team?.logo,
-      awayLogo: away?.team?.logo,
-    }
+// Today's scoreboard and the starred teams' fixtures. Cached + deduped, so the
+// match tile, "Your teams" and the greeting share two requests.
+function useHomeFootball() {
+  const favIds = useMemo(() => readFavTeams(), [])
+  const board  = useCachedFetch('home:scoreboard', fetchScoreboard, { ttl: 2 * 60_000 })
+  const teams  = useCachedFetch(`home:teams:${favIds.join(',')}`, ({ signal }) => fetchFavTeams(favIds, signal), {
+    ttl: 10 * 60_000, enabled: favIds.length > 0,
   })
-  const live = events.filter((e) => e.status === 'in')
-  if (live.length) return live[0]
-  const upcoming = events.filter((e) => e.status === 'pre').sort((a, b) => new Date(a.date) - new Date(b.date))
-  if (upcoming.length) return upcoming[0]
-  const done = events.filter((e) => e.status === 'post').sort((a, b) => new Date(b.date) - new Date(a.date))
-  return done[0] ?? null
+  return { favIds, board, teams }
+}
+
+function kickoffLabel(iso, settings) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const time = formatTime(d, { settings })
+  return d.toDateString() === new Date().toDateString()
+    ? `Today · ${time}`
+    : `${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`
+}
+
+function MatchStatus({ ev, settings }) {
+  if (ev.state === 'in') return <span className="badge badge-red"><span className="live-dot" />{ev.detail || 'LIVE'}</span>
+  if (ev.state === 'post') return <span className="badge badge-neutral">FT</span>
+  return <span className="home-kickoff">{kickoffLabel(ev.date, settings)}</span>
+}
+
+function TeamSide({ team, align = 'left', bold }) {
+  return (
+    <div className={`home-side home-side-${align}`}>
+      {team.logo && <img src={team.logo} alt="" loading="lazy" />}
+      <span style={{ fontWeight: bold ? 700 : 600 }}>{team.name}</span>
+    </div>
+  )
+}
+
+function Scoreline({ ev, size = '1.25rem' }) {
+  return (
+    <div className="home-score" style={{ fontSize: size }}>
+      {ev.state === 'pre' ? 'vs' : `${ev.home.score ?? 0} – ${ev.away.score ?? 0}`}
+    </div>
+  )
 }
 
 function FootballPanel() {
-  const { data: m, error, loading } = useCachedFetch('home:football', fetchNextMatch, { ttl: 5 * 60_000 })
+  const { board } = useHomeFootball()
   const [settings] = useSettings()
-  const kickoffLabel = (iso) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    const now = new Date()
-    const same = d.toDateString() === now.toDateString()
-    const time = formatTime(d, { settings })
-    return same ? `Today · ${time}` : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ` · ${time}`
-  }
+  const m = pickFeatured(board.data ?? [])
   return (
     <Card as="section" padding="none" tone="football" className="home-panel">
-      <SectionHead icon={Trophy} accent="var(--tool-football)" label="Football" to="/football" action="All matches" />
-      {loading && !m && <div style={{ display: 'grid', gap: 10 }}><Skeleton h={12} w="40%" /><Skeleton h={36} /></div>}
-      {!loading && !m && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{error ? "Couldn't load matches." : 'No matches today.'}</div>}
+      <SectionHead icon={Trophy} accent="var(--tool-football)" label="Match of the day" to="/football" action="All matches" />
+      {board.loading && !board.data && <div style={{ display: 'grid', gap: 10 }}><Skeleton h={12} w="40%" /><Skeleton h={36} /></div>}
+      {!board.loading && !m && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{board.error ? 'Couldn’t load matches.' : 'No matches today.'}</div>}
       {m && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.7rem' }}>
-            <span style={{ fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{m.league}</span>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              color: m.status === 'in' ? 'var(--danger)' : m.status === 'post' ? 'var(--text-muted)' : 'var(--accent-text)',
-            }}>
-              {m.status === 'in' && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--danger)', animation: 'home-pulse 1.4s ease-in-out infinite' }} />}
-              {m.status === 'in' ? `LIVE · ${m.statusDetail}` : m.status === 'post' ? 'FT' : kickoffLabel(m.date)}
-            </span>
+          <div className="home-match-meta">
+            <span className="home-league">{m.league}</span>
+            <MatchStatus ev={m} settings={settings} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0 }}>
-              {m.homeLogo && <img src={m.homeLogo} alt="" style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }} />}
-              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.home}</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-              {m.status === 'pre' ? 'vs' : `${m.homeScore ?? 0} – ${m.awayScore ?? 0}`}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', justifyContent: 'flex-end', minWidth: 0 }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.away}</span>
-              {m.awayLogo && <img src={m.awayLogo} alt="" style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }} />}
-            </div>
+          <div className="home-match">
+            <TeamSide team={m.home} />
+            <Scoreline ev={m} />
+            <TeamSide team={m.away} align="right" />
           </div>
         </div>
+      )}
+    </Card>
+  )
+}
+
+function YourTeamsPanel() {
+  const { favIds, board, teams } = useHomeFootball()
+  const [settings] = useSettings()
+  return (
+    <Card as="section" padding="none" tone="football" className="home-panel">
+      <SectionHead icon={Star} accent="var(--tool-football)" label="Your teams" to="/football" action="Football" />
+      {favIds.length === 0 && (
+        <div className="home-teams-empty">
+          <span>Star clubs on the Football page and their live scores and next matches show up here.</span>
+          <Link to="/football" className="home-more-link" style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>
+            Pick your teams <ArrowRight size={12} />
+          </Link>
+        </div>
+      )}
+      {favIds.length > 0 && teams.loading && !teams.data && <div style={{ display: 'grid', gap: 10 }}><Skeleton h={34} /><Skeleton h={34} /></div>}
+      {favIds.length > 0 && !teams.loading && !teams.data?.length && <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Couldn’t load your teams.</div>}
+      {teams.data?.length > 0 && (
+        <ul className="home-teams">
+          {byUrgency(teams.data, board.data ?? []).map((team) => {
+            const ev = fixtureFor(team, board.data ?? [])
+            return (
+              <li key={team.id} className="home-team-row">
+                {ev ? (
+                  <>
+                    <div className="home-match-meta">
+                      <span className="home-league">{ev.league}</span>
+                      <MatchStatus ev={ev} settings={settings} />
+                    </div>
+                    <div className="home-match home-match-sm">
+                      <TeamSide team={ev.home} bold={ev.home.id === team.id} />
+                      <Scoreline ev={ev} size="1.05rem" />
+                      <TeamSide team={ev.away} align="right" bold={ev.away.id === team.id} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="home-match-meta" style={{ margin: 0 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {team.logo && <img src={team.logo} alt="" width={22} height={22} />}{team.name}
+                    </span>
+                    <span className="home-kickoff">No match scheduled</span>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </Card>
   )
@@ -548,15 +593,14 @@ function LanguagePanel() {
 // ─── Quick start ───────────────────────────────────────────────────────────────
 function QuickActionsPanel() {
   const tools = [
-    { to: '/news',     icon: Newspaper, label: 'News',     accent: 'var(--accent-text)' },
-    { to: '/radio',    icon: Radio,     label: 'Radio',    accent: 'var(--info)' },
-    { to: '/football', icon: Trophy,    label: 'Football', accent: 'var(--success)' },
-    { to: '/language', icon: BookOpen,  label: 'Language', accent: 'var(--pink)' },
+    { to: '/news',     icon: Newspaper, label: 'News',     accent: 'var(--tool-news)' },
+    { to: '/football', icon: Trophy,    label: 'Football', accent: 'var(--tool-football)' },
+    { to: '/radio',    icon: Radio,     label: 'Radio',    accent: 'var(--tool-radio)' },
+    { to: '/language', icon: BookOpen,  label: 'Language', accent: 'var(--tool-language)' },
   ]
 
   return (
-    // Hidden on phones — the bottom tab bar already does this job there
-    <Card as="section" padding="none" className="home-panel home-quick">
+    <Card as="section" padding="none" className="home-panel">
       <SectionHead icon={Sparkles} label="Quick Start" />
       <div className="home-action-grid">
         {tools.map(({ to, icon: Icon, label, accent }) => (
@@ -576,82 +620,42 @@ function QuickActionsPanel() {
   )
 }
 
-// ─── Typewriter ───────────────────────────────────────────────────────────────
-const PHRASES_NIGHT = [
-  "get some rest",
-  "still up?",
-  "burning the midnight oil",
-  "the world can wait",
-  "quiet hours",
-]
-const PHRASES_MORNING = [
-  "here's your day",
-  "let's get to work",
-  "what's on the agenda",
-  "here's your briefing",
-  "make it count",
-  "fresh start",
-]
-const PHRASES_AFTERNOON = [
-  "how's it going?",
-  "afternoon check-in",
-  "keep the momentum",
-  "here's the rundown",
-  "staying on track?",
-  "halfway through",
-]
-const PHRASES_EVENING = [
-  "winding down?",
-  "here's the recap",
-  "end of day summary",
-  "how'd it go?",
-  "time to recharge",
-  "almost done",
-]
-
-const getPhrases = (h) =>
-  h < 5  ? PHRASES_NIGHT     :
-  h < 12 ? PHRASES_MORNING   :
-  h < 18 ? PHRASES_AFTERNOON :
-           PHRASES_EVENING
-
 const getPeriod = (h) =>
   h < 5  ? 'night'     :
   h < 12 ? 'morning'   :
   h < 18 ? 'afternoon' :
            'evening'
 
-function useTypewriter(phrases, typeSpeed = 75, deleteSpeed = 35, pauseMs = 1800) {
-  const [text, setText]         = useState(phrases[0])
-  const [phraseIdx, setPhraseIdx] = useState(0)
-  const [deleting, setDeleting] = useState(false)
-  const [paused, setPaused]     = useState(false)
-
-  useEffect(() => {
-    const current = phrases[phraseIdx]
-
-    if (paused) {
-      const t = setTimeout(() => { setPaused(false); setDeleting(true) }, pauseMs)
-      return () => clearTimeout(t)
-    }
-    if (deleting) {
-      if (text.length === 0) {
-        setDeleting(false)
-        setPhraseIdx((i) => (i + 1) % phrases.length)
-        return
-      }
-      const t = setTimeout(() => setText((s) => s.slice(0, -1)), deleteSpeed)
-      return () => clearTimeout(t)
-    }
-    if (text === current) { setPaused(true); return }
-    const t = setTimeout(() => setText(current.slice(0, text.length + 1)), typeSpeed)
-    return () => clearTimeout(t)
-  }, [text, deleting, paused, phraseIdx, phrases, typeSpeed, deleteSpeed, pauseMs])
-
-  return text
+// ─── Greeting line ───────────────────────────────────────────────────────────
+// "Liverpool are drawing 0–0 (HT) · 12° and overcast in Vilnius · 14-day Spanish
+// streak" — built from whatever data is already loaded.
+function useDaySummary(settings) {
+  const { data: wx } = useWeather()
+  const { board, teams } = useHomeFootball()
+  const streak = useMemo(() => readLanguageStreaks()[0], [])
+  const parts = []
+  for (const team of byUrgency(teams.data ?? [], board.data ?? [])) {
+    const line = describeFixture(team, fixtureFor(team, board.data ?? []), (d) => formatTime(d, { settings }))
+    if (line) { parts.push(line); break }
+  }
+  if (wx) {
+    const sky = (WMO_LABEL[wx.code] ?? '').toLowerCase()
+    parts.push(`${formatTemp(wx.temp, settings)}${sky ? ` and ${sky}` : ''}${wx.city ? ` in ${wx.city}` : ''}`)
+  }
+  if (streak?.current > 0) parts.push(`${streak.current}-day ${streak.lang} streak`)
+  return parts.length ? parts.join(' · ') : 'Here’s your day.'
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+const PANELS = {
+  teams: YourTeamsPanel,
+  headlines: HeadlinesPanel,
+  match: FootballPanel,
+  language: LanguagePanel,
+  radio: RadioPanel,
+  quick: QuickActionsPanel,
+}
+
 export default function Home() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -659,46 +663,35 @@ export default function Home() {
     return () => clearInterval(id)
   }, [])
 
-  const h         = now.getHours()
-  const hello     = greet(h)
-  const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
   const [settings] = useSettings()
+  const h         = now.getHours()
+  const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
   const timeLabel = formatTime(now, { settings })
-  const typed     = useTypewriter(getPhrases(h))
-  const period    = getPeriod(h)
+  const summary   = useDaySummary(settings)
+  const widgets   = resolveLayout(settings.homeWidgets).filter((w) => w.on)
 
   return (
     <div className="home-shell">
-      {/* Hero — greeting + weather inline */}
-      <Card padding="none" className={`home-panel home-hero hero-tod hero-${period}`}>
+      {/* Hero — greeting, a one-line summary of the day, weather */}
+      <Card padding="none" className={`home-panel home-hero hero-tod hero-${getPeriod(h)}`}>
         <div style={{ minWidth: 0, flex: '1 1 320px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-sans)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-            <Sparkles size={11} /> {dateLabel} · {timeLabel}
-          </div>
-          <h1 style={{ fontSize: 'clamp(2rem, 3.6vw, 2.9rem)', lineHeight: 1.02, fontFamily: 'var(--font-sans)', fontWeight: 750, letterSpacing: '-0.045em', margin: 0 }}>
-            {hello}
-          </h1>
-          <div style={{ minHeight: '1.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.95rem, 1.4vw, 1.12rem)', fontWeight: 700 }}>
-            <span className="gradient-text">{typed}</span>
-            <span style={{ width: 8, height: '1.05em', borderRadius: 2, background: 'var(--accent-purple)', animation: 'home-pulse 1.1s ease-in-out infinite' }} />
-          </div>
+          <div className="home-hero-date"><Sparkles size={11} /> {dateLabel} · {timeLabel}</div>
+          <h1 className="home-hello">{greet(h)}</h1>
+          <p className="home-summary">{summary}</p>
         </div>
         <HeroWeather />
       </Card>
 
-      {/* Today — Football | Language (stacked on phones) */}
-      <div className="home-today-stack">
-        <FootballPanel />
-        <LanguagePanel />
-      </div>
-
-      {/* Main area — Headlines | Quick Start + Radio (side by side on tablets) */}
-      <div className="home-main-grid">
-        <HeadlinesPanel />
-        <div className="home-right-col">
-          <QuickActionsPanel />
-          <RadioPanel />
-        </div>
+      {/* Widgets — order and visibility come from Settings → Home */}
+      <div className="home-bento">
+        {widgets.map(({ id }) => {
+          const Panel = PANELS[id]
+          return (
+            <div key={id} className={`bento-item bento-${WIDGET_BY_ID[id].size} bento-w-${id}`}>
+              <Panel />
+            </div>
+          )
+        })}
       </div>
     </div>
   )

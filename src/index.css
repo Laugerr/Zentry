@@ -1214,6 +1214,22 @@
   .settings-about { display: flex; align-items: center; gap: 1rem; }
   .settings-confirm { font-size: 0.92rem; line-height: 1.55; color: var(--text-secondary); }
 
+  /* Home widget list */
+  .widget-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+  .widget-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem 0.55rem 0.5rem;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    transition: opacity 0.15s ease;
+  }
+  .widget-row.is-off .settings-row-text { opacity: 0.5; }
+  .widget-order { display: flex; flex-direction: column; gap: 2px; }
+  .widget-order .btn-icon.btn-sm { width: 28px; min-height: 26px; }
+  @media (pointer: coarse) { .widget-order .btn-icon.btn-sm { width: 36px; min-height: 32px; } }
+
   .city-picker { display: flex; flex-direction: column; gap: 0.75rem; }
   .city-current { display: flex; align-items: center; gap: 0.8rem; padding: 0.75rem; border-radius: var(--radius-md); background: var(--surface-2); }
   /* Reuses .news-search, but in a column — don't let its flex-basis become a height */
@@ -1228,6 +1244,36 @@
     .settings-row-control .btn { width: 100%; }
     .city-current { flex-wrap: wrap; }
   }
+}
+
+/* ── Switch (components/ui/Switch.jsx) ─────────────────────────────────── */
+@layer components {
+  .switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--border-strong);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .switch.on { background: var(--tool-football); }
+  .switch:disabled { opacity: 0.5; cursor: not-allowed; }
+  .switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .switch.on .switch-thumb { transform: translateX(18px); }
 }
 
 /* ── Brand: logo + illustrations ──────────────────────────────────────── */
@@ -1287,18 +1333,58 @@
   }
   .home-more-link:hover { color: var(--text-primary); }
 
-  /* Layout: desktop = headlines | side column */
-  .home-today-stack {
+  /* Hero */
+  .home-hero-date {
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;
+    color: var(--text-muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .home-hello { font-size: clamp(2rem, 3.6vw, 2.9rem); line-height: 1.02; font-weight: 750; letter-spacing: -0.045em; margin: 0; }
+  .home-summary { margin-top: 0.55rem; font-size: clamp(0.95rem, 1.3vw, 1.05rem); line-height: 1.45; color: var(--text-secondary); max-width: 60ch; }
+
+  /* Bento grid — 4 columns desktop, 2 tablet, 1 phone. `dense` packs the
+     1×1 tiles into gaps left by the wide/tall ones. */
+  .home-bento {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: row dense;
     gap: 1rem;
   }
-  .home-main-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  .bento-item { min-width: 0; display: flex; }
+  .bento-item > * { flex: 1; min-width: 0; }
+  .bento-wide { grid-column: span 2; }
+  .bento-tall { grid-column: span 2; grid-row: span 2; }
+  @media (max-width: 1023px) {
+    .home-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .bento-wide, .bento-tall { grid-column: span 2; grid-row: auto; }
   }
-  .home-right-col { display: flex; flex-direction: column; gap: 1rem; }
+  @media (max-width: 767px) {
+    .home-bento { grid-template-columns: minmax(0, 1fr); }
+    .bento-wide, .bento-tall, .bento-one { grid-column: auto; }
+    /* The tab bar already gives phones one-tap access to every tool */
+    .bento-w-quick { display: none; }
+  }
+
+  /* Matches (match of the day + your teams) */
+  .home-match-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .home-league {
+    font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  }
+  .home-kickoff { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+  .home-match { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.85rem; }
+  .home-side { display: flex; align-items: center; gap: 0.55rem; min-width: 0; font-size: 0.9rem; color: var(--text-primary); }
+  .home-side span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-side img { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+  .home-side-right { justify-content: flex-end; flex-direction: row-reverse; }
+  .home-score { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.04em; color: var(--text-primary); white-space: nowrap; }
+  .home-match-sm .home-side { font-size: 0.85rem; }
+  .home-match-sm .home-side img { width: 22px; height: 22px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 99px; background: currentColor; animation: home-pulse 1.4s ease-in-out infinite; }
+  .home-teams { list-style: none; display: flex; flex-direction: column; }
+  .home-team-row { padding: 0.65rem 0; border-top: 1px solid color-mix(in srgb, var(--tool-football) 18%, var(--border)); }
+  .home-team-row:first-child { border-top: none; padding-top: 0; }
+  .home-team-row .home-match-meta { margin-bottom: 0.45rem; }
+  .home-teams-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; }
 
   /* Headlines carousel */
   @keyframes hl-text-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -1379,22 +1465,8 @@
   .home-recent-station svg { color: var(--tool-radio); flex-shrink: 0; }
   .home-recent-station:hover { background: var(--nav-hover); color: var(--text-primary); }
 
-  /* Tablets: headlines full width, Quick Start + Radio side by side */
-  @media (max-width: 1023px) {
-    .home-main-grid { grid-template-columns: 1fr; }
-    .home-right-col {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
-  }
-
-  /* Phones: one column, tighter padding, swipeable thumbnails, no Quick
-     Start (the bottom tab bar covers it) */
+  /* Phones: tighter padding, swipeable thumbnails */
   @media (max-width: 767px) {
-    .home-today-stack,
-    .home-right-col { grid-template-columns: 1fr; }
-    .home-quick { display: none; }
     .home-panel { padding: 0.95rem 1rem; }
     .home-panel-flush { padding: 0; }
     .home-hero { padding: 1.1rem 1rem; gap: 1rem; }
