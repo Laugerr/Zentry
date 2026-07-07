@@ -14,7 +14,8 @@ import { useCachedFetch } from '../hooks/useCachedFetch'
 import { useWeather, WMO_ICON } from '../hooks/useWeather'
 import { useSettings } from '../settings/store'
 import { formatTemp, formatWind, formatTime } from '../settings/format'
-import { fetchScoreboard, pickFeatured, readFavTeams, fetchFavTeams, fixtureFor, describeFixture, byUrgency } from '../home/football'
+import { fetchScoreboard, pickFeatured, fetchFavTeams, fixtureFor, describeFixture, byUrgency, MAX_HOME_TEAMS } from '../home/football'
+import { useFavTeamIds } from '../settings/favTeams'
 import { resolveLayout, WIDGET_BY_ID } from '../home/widgets'
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -356,7 +357,8 @@ function HeadlinesPanel() {
 // Today's scoreboard and the starred teams' fixtures. Cached + deduped, so the
 // match tile, "Your teams" and the greeting share two requests.
 function useHomeFootball() {
-  const favIds = useMemo(() => readFavTeams(), [])
+  const allFavs = useFavTeamIds()
+  const favIds  = useMemo(() => allFavs.slice(0, MAX_HOME_TEAMS), [allFavs])
   const board  = useCachedFetch('home:scoreboard', fetchScoreboard, { ttl: 2 * 60_000 })
   const teams  = useCachedFetch(`home:teams:${favIds.join(',')}`, ({ signal }) => fetchFavTeams(favIds, signal), {
     ttl: 10 * 60_000, enabled: favIds.length > 0,

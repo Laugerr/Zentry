@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { IconButton } from './Button'
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+// Tabbable elements only — roving-tabindex widgets (Tabs) mark their
+// unselected options tabindex="-1", and those must be skipped.
+const FOCUSABLE = ['a[href]', 'button:not([disabled])', 'input:not([disabled])', 'select:not([disabled])', 'textarea:not([disabled])', '[tabindex]']
+  .map((sel) => `${sel}:not([tabindex="-1"])`).join(', ')
 
 // Dialog that is a centered modal on tablet/desktop and a bottom sheet on
 // phones (the switch is pure CSS, see .sheet in index.css). Handles Esc,

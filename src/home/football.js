@@ -2,14 +2,8 @@
 // + each starred team's next fixture (ESPN team endpoint — has kickoff, but
 // no scores). Shared by the match tile, "Your teams" and the greeting line.
 
-const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
-const FAV_TEAMS_KEY = 'ft:favorites:v1' // written by the Football page (team ids)
-const MAX_TEAMS = 3
-
-export function readFavTeams() {
-  try { return (JSON.parse(localStorage.getItem(FAV_TEAMS_KEY) || '[]') ?? []).map(String).slice(0, MAX_TEAMS) }
-  catch { return [] }
-}
+export const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
+export const MAX_HOME_TEAMS = 3   // "Your teams" shows the first three favourites
 
 function side(comp, homeAway, fallbackIndex) {
   const c = comp.competitors?.find((x) => x.homeAway === homeAway) ?? comp.competitors?.[fallbackIndex]

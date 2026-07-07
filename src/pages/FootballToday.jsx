@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { InlineError, EmptyState as EmptyNotice } from '../components/states'
 import { formatTime } from '../settings/format'
+import { writeFavTeamIds } from '../settings/favTeams'
 import { useSettings } from '../settings/store'
 
 // ─── League catalogue ─────────────────────────────────────────────────────────
@@ -239,8 +240,9 @@ const FAV_KEY = 'ft:favorites:v1'
 function loadFavs() {
   try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')) } catch { return new Set() }
 }
+// Through the shared store so Home's "Your teams" updates right away
 function saveFavs(set) {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify([...set])) } catch { /* ignore */ }
+  writeFavTeamIds([...set])
 }
 
 // ─── Match details (lazy-loaded) ──────────────────────────────────────────────

@@ -1276,6 +1276,53 @@
   .switch.on .switch-thumb { transform: translateX(18px); }
 }
 
+/* ── First-run setup (onboarding/Onboarding.jsx) ──────────────────────── */
+@layer components {
+  .ob-step { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.9rem; padding: 0.25rem 0 0.5rem; }
+  .ob-title { font-size: 1.6rem; font-weight: 750; letter-spacing: -0.04em; line-height: 1.1; color: var(--text-primary); }
+  .ob-text { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; max-width: 40ch; margin-top: -0.4rem; }
+  .ob-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; width: 100%; margin-top: 0.25rem; }
+  .ob-tool {
+    display: flex; align-items: center; gap: 0.65rem; padding: 0.7rem;
+    border: 1px solid; border-radius: var(--radius-md); text-align: left;
+  }
+  .ob-tool-title { font-size: 0.9rem; font-weight: 650; color: var(--text-primary); }
+  .ob-tool-text { font-size: 0.75rem; color: var(--text-muted); line-height: 1.35; }
+  .ob-theme { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; padding-top: 0.4rem; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
+  .ob-detected { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; padding: 1rem; width: 100%; border-radius: var(--radius-lg); background: var(--surface-2); }
+  .ob-detected-city { font-size: 1.05rem; color: var(--text-secondary); }
+  .ob-detected-city b { color: var(--text-primary); }
+  .ob-row { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+  .ob-popular { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; width: 100%; }
+  .ob-club {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 0.7rem 0.3rem 0.55rem; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--bg-card); cursor: pointer;
+    font-family: var(--font-sans); font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+  .ob-club img { width: 36px; height: 36px; object-fit: contain; }
+  .ob-club span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ob-club:hover { border-color: var(--border-accent); }
+  .ob-club:active { transform: scale(0.96); }
+  .ob-club.on { border-color: var(--tool-football); background: color-mix(in srgb, var(--tool-football) 10%, var(--bg-card)); color: var(--text-primary); }
+  .ob-club-check {
+    position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 99px;
+    display: flex; align-items: center; justify-content: center; background: var(--tool-football); color: #fff;
+  }
+  .ob-selected { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
+  .ob-footer { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.5rem; }
+  .ob-dots { display: flex; gap: 6px; }
+  .ob-dots span { width: 8px; height: 8px; border-radius: 99px; background: var(--border-strong); transition: width 0.2s ease, background 0.2s ease; }
+  .ob-dots span.done { background: var(--text-muted); }
+  .ob-dots span.on { width: 22px; background: var(--ink); }
+  @media (max-width: 767px) {
+    .sheet-footer > .ob-footer { flex: 1; }
+    .ob-footer .btn { flex: 0 0 auto; }
+    .ob-title { font-size: 1.4rem; }
+  }
+}
+
 /* ── Brand: logo + illustrations ──────────────────────────────────────── */
 @layer components {
   .logo { display: inline-flex; align-items: center; gap: calc(var(--logo-size) * 0.32); }

@@ -11,6 +11,7 @@ import { useSettings } from '../settings/store'
 import { formatTime } from '../settings/format'
 import { MiniPlayer } from '../radio/NowPlaying'
 import { useRadio } from '../radio/radio-context'
+import { Onboarding } from '../onboarding/Onboarding'
 
 // `tone` picks the tool colour for the nav chip ('ink' = neutral). `short` is
 // the label in the sidebar and phone tab bar; `label` is the full name. To add
@@ -117,6 +118,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <Onboarding />
 
       {/* ── Sidebar: full on desktop, icon rail on tablets, none on phones ── */}
       {!isMobile && (
