@@ -42,3 +42,15 @@ export function minimalStation(s) {
 export function stationSubtitle(s) {
   return [s.country, s.tags?.split(',')[0], s.bitrate > 0 ? `${s.bitrate} kbps` : null].filter(Boolean).join(' · ')
 }
+
+// 'FR' → 🇫🇷 (regional-indicator letters)
+export function flag(code) {
+  if (!code || code.length !== 2) return ''
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)))
+}
+
+// Country · genre · quality — for lists, tiles and map tooltips
+export function stationMeta(s) {
+  return [s.country || s.countrycode, s.tags?.split(',')[0], s.bitrate > 0 ? `${s.bitrate} kbps` : null]
+    .filter(Boolean).join(' · ')
+}

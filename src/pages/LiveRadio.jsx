@@ -1,14 +1,21 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
-import { useBreakpoint } from '../hooks/useBreakpoint'
-import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
-import { Search, ChevronDown, Star, Clock, List, MapIcon, X, Globe } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import {
+  Search, Star, X, Play, Pause, SkipBack, SkipForward, Shuffle, Volume2, VolumeX, Moon,
+  SlidersHorizontal, Keyboard, WifiOff, RefreshCw, List as ListIcon, Map as MapIcon,
+} from 'lucide-react'
+import { useBreakpoint, useMediaQuery } from '../hooks/useBreakpoint'
 import { useCachedFetch } from '../hooks/useCachedFetch'
-import { InlineError } from '../components/states'
+import { useWeather } from '../hooks/useWeather'
+import { useSettings } from '../settings/store'
+import { Button, Card, IconButton, Sheet, Skeleton, Tabs, useToast } from '../components/ui'
+import { EmptyState } from '../components/states'
+import { Illustration } from '../components/Illustration'
 import { useRadio } from '../radio/radio-context'
-import { RADIO_LS as LS, readJSON, writeJSON, genreColor } from '../radio/stations'
-
-// World map topojson (hosted by observable/world-atlas, MIT license)
-const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+import { RadioArt, NowPlayingSheet } from '../radio/NowPlaying'
+import { RADIO_LS as LS, readJSON, writeJSON, genreColor, minimalStation, flag, stationMeta } from '../radio/stations'
+import { FALLBACK_STATIONS } from '../radio/fallbackStations'
+import { RadioMap } from './radio/RadioMap'
+import { StationRow, StationTile } from './radio/StationParts'
 
 // Radio Browser API servers, tried in random order. nl1/at1/fi1 were retired
 // (no DNS) — `all.` is the project's round-robin name, so it keeps working
@@ -115,273 +122,201 @@ function pingClick(uuid) {
   fetch(`${host}/json/url/${uuid}`, { mode: 'no-cors' }).catch(() => { /* ignore */ })
 }
 
-// ─── Memoized map marker ──────────────────────────────────────────────────────
-// Markers only re-render when their own state (isActive/isFav) or station changes.
-// Without this, hovering a single dot would re-render every other dot.
+// ─── Data helpers ─────────────────────────────────────────────────────────────
 
-// Radii tuned so that at zoom=1 the world view doesn't look like a pixel flood.
-// react-simple-maps scales markers with ZoomableGroup's SVG transform, so
-// zooming in already grows them — we just need the base radius to be small.
-const R_DEFAULT = 1.3
-const R_FAV     = 1.8
-const R_ACTIVE  = 3.2
+// Zentry's picks, shaped like a Radio Browser result for the current filters
+function fallbackStations(genre, country) {
+  return FALLBACK_STATIONS
+    .filter((s) => (genre === 'all' || s.tags.includes(genre)) && (!country || s.countrycode === country))
+    .map((s) => ({ ...s, _lon: s.geo_long, _lat: s.geo_lat, _color: genreColor(s.tags) }))
+}
 
-const StationMarker = memo(function StationMarker({ station, isActive, isFav, onEnter, onLeave, onClick }) {
-  const color = station._color
-  const r = isActive ? R_ACTIVE : isFav ? R_FAV : R_DEFAULT
-  return (
-    <Marker
-      coordinates={[station._lon, station._lat]}
-      onMouseEnter={(e) => onEnter(e, station)}
-      onMouseLeave={onLeave}
-      onClick={() => onClick(station)}
-      style={{ cursor: 'pointer' }}
-    >
-      <circle
-        r={r}
-        fill={color}
-        fillOpacity={isActive ? 1 : isFav ? 0.9 : 0.65}
-        stroke={isActive ? '#fff' : isFav ? '#facc15' : color}
-        strokeWidth={isActive ? 1.2 : isFav ? 0.8 : 0.3}
-      />
-      {isActive && (
-        <circle r={7} fill="none" stroke={color} strokeWidth={0.8} strokeOpacity={0.5}
-          style={{ animation: 'pulse-ring 1.5s ease-out infinite' }} />
-      )}
-    </Marker>
-  )
-})
+const PAGE = 60 // list rows rendered per "Show more"
 
-// ─── Station list item ────────────────────────────────────────────────────────
+function stationStatus(station, radio) {
+  return radio.station?.stationuuid === station.stationuuid ? radio.status : undefined
+}
 
-function StationRow({ station, active, favourite, onPlay, onToggleFav }) {
-  const color = genreColor(station.tags)
-  return (
-    <div
-      onClick={() => onPlay(station)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '0.55rem',
-        padding: '0.5rem 0.6rem', borderRadius: 8, cursor: 'pointer',
-        background: active ? `${color}18` : 'transparent',
-        border: `1px solid ${active ? `${color}55` : 'transparent'}`,
-        transition: 'background 0.15s',
-      }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
-    >
-      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {station.name}
+// ─── Now playing hero ─────────────────────────────────────────────────────────
+
+function NowPlayingHero({ radio, favourite, onToggleFav, onSurprise, canSurprise, compact }) {
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const { station, status, lastStation } = radio
+
+  if (!station) {
+    return (
+      <Card tone="radio" padding="none" className="radio-hero radio-hero-idle">
+        <Illustration name="radio" width={compact ? 96 : 132} />
+        <div className="radio-hero-text">
+          <div className="radio-hero-kicker">Live radio</div>
+          <h2 className="radio-hero-title">Pick a station</h2>
+          <p className="radio-hero-sub">Thousands of live stations from around the world. Tap any station, a genre or a dot on the map.</p>
+          <div className="radio-hero-actions">
+            <Button variant="primary" icon={Shuffle} onClick={onSurprise} disabled={!canSurprise}>Surprise me</Button>
+            {lastStation && <Button variant="secondary" icon={Play} onClick={() => radio.play(lastStation)}>Resume {lastStation.name}</Button>}
+          </div>
         </div>
-        <div style={{ fontSize: '0.63rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {[station.country, station.tags?.split(',')[0], station.bitrate > 0 ? `${station.bitrate}kbps` : null]
-            .filter(Boolean).join(' · ')}
+      </Card>
+    )
+  }
+
+  const playing = status === 'playing' || status === 'loading'
+  const canSkip = radio.queue.length > 1
+  return (
+    <Card tone="radio" padding="none" className="radio-hero">
+      <RadioArt station={station} status={status} size={compact ? 84 : 132} />
+      <div className="radio-hero-text">
+        <div className="radio-hero-kicker">
+          {status === 'playing' && <span className="badge badge-red"><span className="live-dot" />Live</span>}
+          {status === 'loading' && 'Connecting…'}
+          {status === 'paused' && 'Paused'}
+          {status === 'error' && 'Stream unavailable — skipping…'}
+        </div>
+        <h2 className="radio-hero-title">{station.name}</h2>
+        <p className="radio-hero-sub">{flag(station.countrycode)} {stationMeta(station)}</p>
+        <div className="radio-hero-controls">
+          <IconButton icon={SkipBack} label="Previous station" variant="secondary" onClick={radio.prev} disabled={!canSkip} />
+          <button type="button" className="np-play" style={{ width: 56, height: 56 }} onClick={radio.toggle} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 3 }} />}
+          </button>
+          <IconButton icon={SkipForward} label="Next station" variant="secondary" onClick={radio.next} disabled={!canSkip} />
+          <IconButton icon={Shuffle} label="Shuffle" onClick={radio.shuffle} disabled={!canSkip} />
+          <IconButton icon={Star} label={favourite ? 'Remove from favourites' : 'Add to favourites'} active={favourite}
+            className={`radio-hero-fav${favourite ? ' on' : ''}`} onClick={() => onToggleFav(station)} />
+          {!compact && (
+            <div className="radio-hero-volume">
+              <IconButton icon={radio.muted ? VolumeX : Volume2} label={radio.muted ? 'Unmute' : 'Mute'} size="sm" onClick={radio.toggleMute} />
+              <input type="range" min="0" max="1" step="0.02" aria-label="Volume" value={radio.muted ? 0 : radio.volume}
+                onChange={(e) => { radio.setVolume(parseFloat(e.target.value)); if (radio.muted) radio.toggleMute() }} />
+            </div>
+          )}
+          <IconButton icon={radio.sleep ? Moon : SlidersHorizontal} label="Sleep timer & more" onClick={() => setSheetOpen(true)}
+            className={radio.sleep ? 'radio-hero-fav on' : ''} />
         </div>
       </div>
-      <button onClick={(e) => { e.stopPropagation(); onToggleFav(station) }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer',
-          color: favourite ? '#facc15' : 'var(--text-muted)', opacity: favourite ? 1 : 0.4,
-          padding: 2, display: 'flex' }}>
-        <Star size={13} fill={favourite ? '#facc15' : 'none'} />
-      </button>
-    </div>
+      <NowPlayingSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+    </Card>
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Swipeable browse row ─────────────────────────────────────────────────────
+
+function BrowseRow({ title, stations, radio, onPlay, action }) {
+  if (!stations.length) return null
+  return (
+    <section className="radio-row">
+      <div className="radio-row-head">
+        <h3>{title}</h3>
+        {action}
+      </div>
+      <div className="radio-row-strip">
+        {stations.map((s) => <StationTile key={s.stationuuid} station={s} status={stationStatus(s, radio)} onPlay={onPlay} />)}
+      </div>
+    </section>
+  )
+}
+
+const SHORTCUTS = [
+  ['Space', 'Play / pause'], ['N', 'Next station'], ['P', 'Previous station'],
+  ['S', 'Shuffle'], ['M', 'Mute'], ['↑ / ↓', 'Volume'],
+]
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LiveRadio() {
-  const [genre,      setGenre]      = useState('all')
-  const [country,    setCountry]    = useState('')           // ISO country code filter
-  const [search,     setSearch]     = useState('')
-  const [sort,       setSort]       = useState('popularity') // popularity | name | bitrate
-  const [tooltip,    setTooltip]    = useState(null)
-  const [zoom,       setZoom]       = useState(1)
-  const [center,     setCenter]     = useState([0, 20])
-  const { isMobile } = useBreakpoint()
-  const [showGenre,  setShowGenre]  = useState(false)
-  const [showCountry,setShowCountry]= useState(false)
-  const [showList,   setShowList]   = useState(true)
-  const [nowPlaying, setNowPlaying] = useState(null) // { station, ts } — brief pill on mobile
-  const [listTab,    setListTab]    = useState('all')        // all | favs | recents
+  const [genre,   setGenre]   = useState('all')
+  const [country, setCountry] = useState('')            // ISO code filter
+  const [search,  setSearch]  = useState('')
+  const [sort,    setSort]    = useState('popularity')  // popularity | name | bitrate
+  const [view,    setView]    = useState('browse')      // phones & tablets: browse | map
+  const [shown,   setShown]   = useState(PAGE)
+  const [keysOpen, setKeysOpen] = useState(false)
   const [favourites, setFavourites] = useState(() => readJSON(LS.favs, []))
-  const mapRef = useRef(null)
+  const { isMobile, isDesktop } = useBreakpoint()
+  const touch = useMediaQuery('(pointer: coarse)')
+  const [settings] = useSettings()
+  const { data: wx } = useWeather()
+  const toast = useToast()
   // Playback lives in the app-wide RadioProvider so it survives leaving this
   // page; here we only drive it. Recents / last station are kept there too.
   const radio = useRadio()
-  const active  = radio.station
-  const recents = radio.recents
 
   useEffect(() => { writeJSON(LS.favs, favourites) }, [favourites])
+  useEffect(() => { setShown(PAGE) }, [genre, country, search, sort])
 
-  // Observe theme so the map palette follows dark/light mode without a reload.
-  const [theme, setTheme] = useState(() => typeof document !== 'undefined'
-    ? document.documentElement.dataset.theme || 'dark' : 'dark')
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const el = document.documentElement
-    const obs = new MutationObserver(() => setTheme(el.dataset.theme || 'dark'))
-    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => obs.disconnect()
-  }, [])
-  const mapPalette = theme === 'light'
-    ? { bg: '#f1f3f8', land: '#e5e7eb', stroke: '#cbd1da', hover: '#dadee8', hoverStroke: '#9ca3af' }
-    : { bg: 'rgba(10,12,20,0.9)', land: '#1e2235', stroke: '#2d3250', hover: '#252840', hoverStroke: '#3d4270' }
-
-  // Load stations whenever filters change. SWR via the shared cache means
-  // re-selecting a genre/country you viewed recently is instant, and the
-  // request is deduped + retryable.
-  const { data: stationsData, loading, error, refresh } = useCachedFetch(
+  // Radio Browser, falling back to Zentry's picks when the directory is down
+  const { data, loading, error, refresh } = useCachedFetch(
     `lr:stations:${genre}:${country || 'ww'}`,
     () => fetchStations(genre, country),
     { ttl: 15 * 60_000 },
   )
-  const stations = useMemo(() => stationsData ?? [], [stationsData])
+  const offline  = !!error && !data
+  const stations = useMemo(() => data ?? (offline ? fallbackStations(genre, country) : []), [data, offline, genre, country])
 
-  // Auto-dismiss the "now playing" pill after a moment.
-  useEffect(() => {
-    if (!nowPlaying) return
-    const id = setTimeout(() => setNowPlaying(null), 2400)
-    return () => clearTimeout(id)
-  }, [nowPlaying])
+  // "Popular in <your country>" — the Settings city wins over IP detection
+  const homeCode = useMemo(() => {
+    if (settings.city?.country) return stations.find((s) => s.country === settings.city.country)?.countrycode ?? ''
+    return wx?.country ?? ''
+  }, [settings.city, wx, stations])
+  const homeName = settings.city?.country ?? stations.find((s) => s.countrycode === homeCode)?.country ?? ''
+  const { data: homeData } = useCachedFetch(
+    `lr:stations:${genre}:${homeCode || 'none'}`,
+    () => fetchStations(genre, homeCode),
+    { ttl: 15 * 60_000, enabled: !!homeCode && !offline && !country },
+  )
+  const popularHere = useMemo(() => {
+    if (!homeCode || country) return []
+    return (offline ? fallbackStations(genre, homeCode) : homeData ?? []).slice(0, 12)
+  }, [homeCode, country, offline, genre, homeData])
 
-  // When a country filter is selected, pan/zoom the map to it for instant context.
-  // When cleared, snap back to the world view.
-  useEffect(() => {
-    if (!country) { setZoom(1); setCenter([0, 20]); return }
-    // Station list may not have reloaded yet — guard on stations content.
-    const one = stations.find((s) => s.countrycode === country)
-    if (one && Number.isFinite(one._lon) && Number.isFinite(one._lat)) {
-      setCenter([one._lon, one._lat])
-      setZoom(4)
-    }
-  }, [country, stations])
+  const favouriteSet = useMemo(() => new Set(favourites.map((f) => f.stationuuid)), [favourites])
+  const toggleFav = useCallback((station) => {
+    const exists = favouriteSet.has(station.stationuuid)
+    setFavourites((prev) => exists
+      ? prev.filter((s) => s.stationuuid !== station.stationuuid)
+      : [minimalStation(station), ...prev])
+    toast(exists ? 'Removed from favourites' : 'Added to favourites', { tone: exists ? 'neutral' : 'success' })
+  }, [favouriteSet, toast])
 
-  // Close dropdowns on outside click
-  useEffect(() => {
-    if (!showGenre && !showCountry) return
-    const close = () => { setShowGenre(false); setShowCountry(false) }
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [showGenre, showCountry])
-
-  // Top countries derived from loaded stations (for quick-filter dropdown)
   const countryOptions = useMemo(() => {
     const m = new Map()
     for (const s of stations) {
-      const code = s.countrycode || ''
-      const name = s.country || code
-      if (!code) continue
-      const cur = m.get(code) || { code, name, count: 0 }
+      if (!s.countrycode) continue
+      const cur = m.get(s.countrycode) ?? { code: s.countrycode, name: s.country || s.countrycode, count: 0 }
       cur.count++
-      m.set(code, cur)
+      m.set(s.countrycode, cur)
     }
-    return [...m.values()].sort((a, b) => b.count - a.count).slice(0, 40)
+    return [...m.values()].sort((a, b) => b.count - a.count).slice(0, 60)
   }, [stations])
 
-  // Base filtering (search)
-  const baseFiltered = useMemo(() => {
-    if (!search.trim()) return stations
-    const q = search.toLowerCase()
-    return stations.filter((s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.country.toLowerCase().includes(q) ||
-      (s.tags || '').toLowerCase().includes(q)
-    )
-  }, [stations, search])
-
-  // Cap markers for performance: rendering 3000 SVG dots chokes the main thread.
-  // Stations are already sorted by popularity, so we keep the top 1500.
-  const mapMarkers = useMemo(
-    () => baseFiltered.length > 1500 ? baseFiltered.slice(0, 1500) : baseFiltered,
-    [baseFiltered]
-  )
-
-  // Zoom-adaptive density thinning — at world view, drop markers that collide
-  // into the same coarse lat/lon bucket so the map doesn't look like noise.
-  // Active + favourites are always shown (they shouldn't disappear when zoomed out).
-  const favouriteSet = useMemo(() => new Set(favourites.map((f) => f.stationuuid)), [favourites])
-  const displayedMarkers = useMemo(() => {
-    if (zoom >= 3) return mapMarkers
-    const cell = zoom < 1.3 ? 4 : zoom < 2 ? 2 : 1   // degrees; shrinks as we zoom in
-    const grid = new Map()
-    const pinned = []
-    for (const s of mapMarkers) {
-      const isPinned = active?.stationuuid === s.stationuuid || favouriteSet.has(s.stationuuid)
-      if (isPinned) { pinned.push(s); continue }
-      const k = `${Math.round(s._lat / cell)}|${Math.round(s._lon / cell)}`
-      const cur = grid.get(k)
-      if (!cur || (s.clickcount || 0) > (cur.clickcount || 0)) grid.set(k, s)
-    }
-    return [...pinned, ...grid.values()]
-  }, [mapMarkers, zoom, active, favouriteSet])
-
-  // List subset based on tab
   const listData = useMemo(() => {
-    let data = baseFiltered
-    if (listTab === 'favs') {
-      const favSet = new Set(favourites.map((f) => f.stationuuid))
-      data = favourites.filter((s) => !search.trim()
-        || s.name.toLowerCase().includes(search.toLowerCase())
-        || (s.country || '').toLowerCase().includes(search.toLowerCase()))
-      // Keep fresh data if we have it in stations
-      data = data.map((f) => stations.find((s) => s.stationuuid === f.stationuuid) || f)
-      // When genre/country filters are active, narrow too
-      if (genre !== 'all' || country) data = data.filter((s) => favSet.has(s.stationuuid))
-    } else if (listTab === 'recents') {
-      data = recents.map((r) => stations.find((s) => s.stationuuid === r.stationuuid) || r)
-      if (search.trim()) {
-        const q = search.toLowerCase()
-        data = data.filter((s) => s.name.toLowerCase().includes(q) || (s.country || '').toLowerCase().includes(q))
-      }
-    }
-    const sorted = [...data]
-    if (sort === 'name')     sorted.sort((a, b) => a.name.localeCompare(b.name))
-    else if (sort === 'bitrate') sorted.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
-    else                     sorted.sort((a, b) => (b.clickcount || 0) - (a.clickcount || 0))
-    return sorted
-  }, [baseFiltered, listTab, favourites, recents, stations, sort, search, genre, country])
+    const q = search.trim().toLowerCase()
+    const data = q
+      ? stations.filter((s) => s.name.toLowerCase().includes(q) || (s.country || '').toLowerCase().includes(q) || (s.tags || '').toLowerCase().includes(q))
+      : [...stations]
+    if (sort === 'name')         data.sort((a, b) => a.name.localeCompare(b.name))
+    else if (sort === 'bitrate') data.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
+    return data // already by popularity
+  }, [stations, search, sort])
 
-  const playStation = useCallback((station) => {
-    // The visible list becomes the queue for next / previous / shuffle
-    radio.play(station, listData)
-    setTooltip(null)
-    pingClick(station.stationuuid)
-    // Brief "now playing" pill (mostly for mobile where the player is below the fold).
-    setNowPlaying({ station, ts: Date.now() })
-    // Subtle haptic tick on devices that support it.
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8)
+  const play = useCallback((station, queue = listData) => {
+    // The list the station came from becomes the queue for next / previous
+    radio.play(station, queue)
+    if (!station.stationuuid.startsWith('zentry-')) pingClick(station.stationuuid)
+    if (navigator.vibrate) navigator.vibrate(8)
   }, [radio, listData])
 
-  // Stable marker callbacks so memoized StationMarker doesn't re-render on every state change.
-  // On mobile we skip hover-tooltips entirely (they collide with the tap-to-play gesture
-  // and linger after touchstart); the "now playing" pill takes their place.
-  const onMarkerEnter = useCallback((e, station) => {
-    if (isMobile) return
-    const rect = mapRef.current?.getBoundingClientRect()
-    setTooltip({ x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0), station })
-  }, [isMobile])
-  const onMarkerLeave = useCallback(() => setTooltip(null), [])
-
-  const toggleFav = useCallback((station) => {
-    setFavourites((prev) => {
-      const exists = prev.some((s) => s.stationuuid === station.stationuuid)
-      if (exists) return prev.filter((s) => s.stationuuid !== station.stationuuid)
-      return [{
-        stationuuid: station.stationuuid, name: station.name, country: station.country,
-        tags: station.tags, url: station.url, url_resolved: station.url_resolved,
-        bitrate: station.bitrate, codec: station.codec, geo_lat: station.geo_lat, geo_long: station.geo_long,
-        clickcount: station.clickcount,
-      }, ...prev]
-    })
-  }, [])
+  const surprise = () => {
+    const pool = listData.slice(0, 50)
+    if (pool.length) play(pool[Math.floor(Math.random() * pool.length)], pool)
+  }
 
   // Keyboard shortcuts while a station is loaded (this page only — Space etc.
   // would be surprising elsewhere). Media keys work everywhere via MediaSession.
   useEffect(() => {
     if (!radio.station) return
     const onKey = (e) => {
+      if (e.target?.closest?.('input, textarea, select, button, [contenteditable="true"]') && e.key === ' ') return
       if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
       switch (e.key) {
         case ' ':           e.preventDefault(); radio.toggle(); break
@@ -398,377 +333,133 @@ export default function LiveRadio() {
     return () => window.removeEventListener('keydown', onKey)
   }, [radio])
 
-  const activeGenre   = GENRES.find((g) => g.id === genre)
-  const activeCountry = countryOptions.find((c) => c.code === country)
+  const mapFocus = useMemo(() => {
+    if (!country) return null
+    const one = stations.find((s) => s.countrycode === country && Number.isFinite(s._lon))
+    return one ? [one._lon, one._lat] : null
+  }, [country, stations])
 
-  // Station list panel — rendered in one of two slots depending on breakpoint.
-  // Extracted as a variable (not a component) so the same JSX is shared
-  // between the mobile-first-above-map and desktop-right-of-map positions
-  // without duplicating markup or causing key/remount churn.
-  const listPanel = (
-    <div style={{
-      // On mobile we anchor the list to a concrete viewport-relative height so
-      // it doesn't collapse when the PlayerBar appears or when the root's
-      // `height: 100%` doesn't resolve cleanly through the nested flex chain.
-      ...(isMobile
-        ? { flex: 'none', width: '100%', height: 'min(55vh, 480px)' }
-        : { flex: '2', minHeight: 0 }),
-      display: 'flex', flexDirection: 'column',
-      background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden',
-    }}>
-      {/* List header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.5rem 0.6rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        {[
-          { id: 'all',     label: 'All',     count: baseFiltered.length },
-          { id: 'favs',    label: '★ Favs',  count: favourites.length },
-          { id: 'recents', label: 'Recent',  count: recents.length },
-        ].map((t) => {
-          const isA = listTab === t.id
-          return (
-            <button key={t.id} onClick={() => setListTab(t.id)}
-              style={{ padding: '0.3rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: isA ? 700 : 500,
-                border: isA ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
-                background: isA ? 'rgba(167,139,250,0.12)' : 'transparent',
-                color: isA ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              {t.label}<span style={{ fontSize: '0.62rem', opacity: 0.7 }}>{t.count}</span>
-            </button>
-          )
-        })}
+  const genreMeta  = GENRES.find((g) => g.id === genre)
+  const browsing   = !search.trim()
+  const topLabel   = genre === 'all' ? 'Top worldwide' : `Top ${genreMeta.label}`
+  const listTitle  = search.trim() ? `Results for “${search.trim()}”` : country ? `${flag(country)} ${countryOptions.find((c) => c.code === country)?.name ?? country}` : 'All stations'
+  const recents    = radio.recents.slice(0, 12)
 
-        <select value={sort} onChange={(e) => setSort(e.target.value)}
-          style={{ marginLeft: 'auto', background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-            color: 'var(--text-secondary)', fontSize: '0.7rem', padding: '0.25rem 0.4rem', borderRadius: 6, cursor: 'pointer' }}>
-          <option value="popularity">Popular</option>
-          <option value="name">Name</option>
-          <option value="bitrate">Bitrate</option>
-        </select>
-        {isMobile && (
-          <button onClick={() => setShowList(false)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
-            <X size={14} />
-          </button>
-        )}
-      </div>
-
-      {/* List body — flex:1 + minHeight:0 on parent is what lets overflow-y:auto actually scroll */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-        {loading && [...Array(8)].map((_, i) => (
-          <div key={i} style={{ height: 40, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
-        ))}
-        {!loading && listData.length === 0 && (
-          <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-            {listTab === 'favs'
-              ? 'No favourites yet. Star stations to save them here.'
-              : listTab === 'recents'
-                ? 'Nothing played yet.'
-                : 'No stations match the current filters.'}
-          </div>
-        )}
-        {!loading && listData.slice(0, 500).map((s) => (
-          <StationRow key={s.stationuuid} station={s}
-            active={active?.stationuuid === s.stationuuid}
-            favourite={favouriteSet.has(s.stationuuid)}
-            onPlay={playStation}
-            onToggleFav={toggleFav} />
-        ))}
-        {!loading && listData.length > 500 && (
-          <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', padding: '0.5rem' }}>
-            Showing first 500 of {listData.length.toLocaleString()}. Narrow your filters for more.
-          </div>
-        )}
-      </div>
-
-      {listTab === 'recents' && recents.length > 0 && (
-        <button onClick={radio.clearRecents}
-          style={{ borderTop: '1px solid var(--border)', padding: '0.5rem', background: 'transparent',
-            border: 'none', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer', flexShrink: 0 }}>
-          <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />
-          Clear history
-        </button>
-      )}
-    </div>
+  const map = (
+    <RadioMap stations={stations} activeId={radio.station?.stationuuid} favouriteSet={favouriteSet}
+      onPlay={(s) => play(s, stations)} touch={touch} focus={mapFocus} />
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', position: 'relative' }}>
-
-      {/* "Now playing" pill — appears briefly when a station is selected.
-          Useful on mobile where the player bar may be below the fold,
-          and as a quick confirmation of the tap on desktop too. */}
-      {nowPlaying && (
-        <div style={{
-          position: 'fixed', top: isMobile ? 64 : 76, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 60, pointerEvents: 'none',
-          background: 'rgba(10,12,20,0.92)', color: 'var(--text-primary)',
-          border: `1px solid ${nowPlaying.station._color ?? genreColor(nowPlaying.station.tags)}55`,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.35), 0 0 20px rgba(139,92,246,0.15)',
-          borderRadius: 999, padding: '0.45rem 0.9rem',
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
-          fontSize: '0.78rem', maxWidth: 'min(420px, 92vw)',
-          animation: 'np-in 0.22s ease-out',
-        }}>
-          <span style={{ width: 7, height: 7, borderRadius: 999,
-            background: nowPlaying.station._color ?? genreColor(nowPlaying.station.tags),
-            animation: 'pulse 1.3s ease-in-out infinite', flexShrink: 0 }} />
-          <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>
-            {nowPlaying.station.name}
-          </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            · {nowPlaying.station.country || nowPlaying.station.countrycode || '—'}
-          </span>
+    <div className="radio-page">
+      {!isMobile && (
+        <div className="radio-head">
+          <div>
+            <h1 className="radio-title">Radio</h1>
+            <p className="radio-subtitle">
+              {loading && !data ? 'Loading stations…' : `${stations.length.toLocaleString()} stations${offline ? ' · Zentry’s picks' : ' · live from Radio Browser'}`}
+            </p>
+          </div>
+          {!touch && <IconButton icon={Keyboard} label="Keyboard shortcuts" variant="secondary" onClick={() => setKeysOpen(true)} />}
         </div>
       )}
 
-      {/* Header — two explicit rows (no more wrap-lottery).
-          Row 1: title + subtitle + secondary controls (list toggle, zoom).
-          Row 2: search (fills available width) + genre + country chips. */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '0.75rem' }}>
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.02em' }}>📻 Live Radio</h2>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {loading
-                ? 'Loading stations…'
-                : isMobile
-                  ? `${baseFiltered.length.toLocaleString()} stations · tap any dot to play`
-                  : `${baseFiltered.length.toLocaleString()} stations · ${displayedMarkers.length.toLocaleString()} on map · Space / N / P / S / M / ↑↓`
-              }
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-            {/* List toggle — available on every breakpoint so users who closed the
-                list on mobile (via its X button) can get it back. */}
-            <button onClick={() => setShowList((v) => !v)}
-              title={showList ? 'Hide list' : 'Show list'}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem',
-                padding: '0.4rem 0.65rem', background: showList ? 'rgba(167,139,250,0.12)' : 'var(--bg-card)',
-                border: `1px solid ${showList ? 'rgba(167,139,250,0.4)' : 'var(--border)'}`, borderRadius: 8,
-                color: showList ? '#a78bfa' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
-              {showList ? <List size={13} /> : <MapIcon size={13} />}
-              {!isMobile && (showList ? 'Hide list' : 'Show list')}
-            </button>
-
-            {/* Zoom — desktop only; mobile uses native pinch-zoom from ZoomableGroup */}
-            {!isMobile && (
-              <div style={{ display: 'flex', gap: '0.3rem' }}>
-                {[['−', () => setZoom((z) => Math.max(1, z / 1.5))],
-                  ['+', () => setZoom((z) => Math.min(12, z * 1.5))],
-                  ['↺', () => { setZoom(1); setCenter([0, 20]) }]].map(([label, fn]) => (
-                  <button key={label} onClick={fn}
-                    style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-card)',
-                      color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {offline && (
+        <div className="radio-notice" role="status">
+          <WifiOff size={16} aria-hidden="true" />
+          <span>The station directory is offline right now — here are Zentry’s hand-picked stations.</span>
+          <Button size="sm" variant="secondary" icon={RefreshCw} onClick={refresh}>Retry</Button>
         </div>
+      )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* Search — flex: 1 so it fills whatever's left */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: '1 1 220px', minWidth: 0 }}>
-            <Search size={13} style={{ position: 'absolute', left: '0.6rem', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={isMobile ? 'Search stations…' : 'Search name / country / tag…'}
-              style={{
-                flex: 1, width: '100%',
-                paddingLeft: '2rem', paddingRight: '0.75rem', paddingTop: '0.45rem', paddingBottom: '0.45rem',
-                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8,
-                color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none',
-              }}
-            />
-          </div>
+      <NowPlayingHero radio={radio} compact={isMobile}
+        favourite={!!radio.station && favouriteSet.has(radio.station.stationuuid)} onToggleFav={toggleFav}
+        onSurprise={surprise} canSurprise={listData.length > 0} />
 
-          {/* Genre */}
-          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => { setShowGenre((v) => !v); setShowCountry(false) }}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.45rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 8, color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-              <span>{activeGenre?.emoji}</span>
-              <span>{activeGenre?.label}</span>
-              <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: showGenre ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-            {showGenre && (
-              <div style={isMobile
-                ? { position: 'fixed', top: 'auto', bottom: 12, left: 12, right: 12, zIndex: 200,
-                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                    borderRadius: 12, padding: 4, maxHeight: '60vh', overflowY: 'auto',
-                    boxShadow: '0 12px 48px rgba(0,0,0,0.6)' }
-                : { position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
-                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                    borderRadius: 10, padding: 4, minWidth: 180, maxHeight: 320, overflowY: 'auto',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                {GENRES.map((g) => (
-                  <button key={g.id}
-                    onClick={() => { setGenre(g.id); setShowGenre(false) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
-                      padding: '0.4rem 0.6rem', background: genre === g.id ? 'rgba(167,139,250,0.12)' : 'transparent',
-                      border: 'none', borderRadius: 7, color: genre === g.id ? '#a78bfa' : 'var(--text-secondary)',
-                      cursor: 'pointer', fontSize: '0.78rem', textAlign: 'left' }}>
-                    <span>{g.emoji}</span><span>{g.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Country */}
-          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => { setShowCountry((v) => !v); setShowGenre(false) }}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.45rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 8, color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-              <Globe size={12} />
-              <span>{country ? (activeCountry?.name || country) : 'Worldwide'}</span>
-              <ChevronDown size={13} style={{ color: 'var(--text-muted)', transform: showCountry ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-            {showCountry && (
-              <div style={isMobile
-                ? { position: 'fixed', top: 'auto', bottom: 12, left: 12, right: 12, zIndex: 200,
-                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                    borderRadius: 12, padding: 4, maxHeight: '60vh', overflowY: 'auto',
-                    boxShadow: '0 12px 48px rgba(0,0,0,0.6)' }
-                : { position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
-                    background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                    borderRadius: 10, padding: 4, minWidth: 200, maxHeight: 320, overflowY: 'auto',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                <button onClick={() => { setCountry(''); setShowCountry(false) }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
-                    padding: '0.4rem 0.6rem', background: !country ? 'rgba(167,139,250,0.12)' : 'transparent',
-                    border: 'none', borderRadius: 7, color: !country ? '#a78bfa' : 'var(--text-secondary)',
-                    cursor: 'pointer', fontSize: '0.78rem', textAlign: 'left' }}>
-                  🌐 Worldwide
-                </button>
-                {countryOptions.map((c) => (
-                  <button key={c.code}
-                    onClick={() => { setCountry(c.code); setShowCountry(false) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
-                      padding: '0.4rem 0.6rem', background: country === c.code ? 'rgba(167,139,250,0.12)' : 'transparent',
-                      border: 'none', borderRadius: 7, color: country === c.code ? '#a78bfa' : 'var(--text-secondary)',
-                      cursor: 'pointer', fontSize: '0.78rem', textAlign: 'left' }}>
-                    <span style={{ flex: 1 }}>{c.name}</span>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{c.count}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Genres */}
+      <div className="chip-row radio-genres" role="group" aria-label="Genre">
+        {GENRES.map((g) => (
+          <button key={g.id} type="button" aria-pressed={genre === g.id} onClick={() => setGenre(g.id)}
+            className={`chip${genre === g.id ? ' active' : ''}`} style={{ '--genre': genreColor(g.id) }}>
+            {g.id !== 'all' && <span className="genre-dot" aria-hidden="true" />}{g.label}
+          </button>
+        ))}
       </div>
 
-      {/* Map + List layout.
-          Mobile: list first (primary touch surface), then a short fixed-height map.
-          Desktop: map left, list right. We render the two sections in explicit
-          order per breakpoint rather than using `column-reverse` — the latter was
-          fighting the list's internal scroll and producing the visual mess where
-          the header appeared to float inside the list. */}
-      <div style={{
-        flex: 1, display: 'flex', gap: '1rem', minHeight: 0,
-        flexDirection: isMobile ? 'column' : 'row',
-      }}>
+      {!isDesktop && (
+        <Tabs label="View" block value={view} onChange={setView} options={[
+          { value: 'browse', label: 'Browse', icon: ListIcon },
+          { value: 'map',    label: 'Map',    icon: MapIcon },
+        ]} />
+      )}
 
-        {/* --- MOBILE: list first --- */}
-        {isMobile && showList && listPanel}
+      <div className={isDesktop ? 'radio-split' : 'radio-single'}>
+        {(isDesktop || view === 'browse') && (
+          <div className="radio-browse">
+            {browsing && (
+              <>
+                <BrowseRow title="Your favourites" stations={favourites.slice(0, 12)} radio={radio} onPlay={(s) => play(s, favourites)} />
+                <BrowseRow title="Recently played" stations={recents} radio={radio} onPlay={(s) => play(s, recents)}
+                  action={<button type="button" className="home-more-link" onClick={radio.clearRecents}>Clear</button>} />
+                {homeName && <BrowseRow title={`Popular in ${flag(homeCode)} ${homeName}`} stations={popularHere} radio={radio} onPlay={(s) => play(s, popularHere)} />}
+                {!country && <BrowseRow title={topLabel} stations={listData.slice(0, 12)} radio={radio} onPlay={(s) => play(s, listData.slice(0, 12))} />}
+              </>
+            )}
 
-        {/* Map */}
-        <div ref={mapRef} style={{
-          flex: isMobile ? 'none' : (showList ? '3' : '1'),
-          height: isMobile ? 240 : undefined,
-          minHeight: isMobile ? 240 : 420, position: 'relative',
-          background: mapPalette.bg, border: '1px solid var(--border)',
-          borderRadius: 14, overflow: 'hidden',
-        }}>
-          {loading && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', zIndex: 10 }}>
-              <div className="spinner" style={{ width: 24, height: 24 }} />
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading stations from Radio Browser…</span>
-            </div>
-          )}
-          {error && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-              <InlineError message={error.message || 'Failed to load stations'} onRetry={refresh} />
-            </div>
-          )}
-
-          <ComposableMap projection="geoMercator" projectionConfig={{ scale: 140, center: [0, 20] }} style={{ width: '100%', height: '100%' }}>
-            <ZoomableGroup zoom={zoom} center={center} onMoveEnd={({ zoom: z, coordinates }) => { setZoom(z); setCenter(coordinates) }}>
-              <Geographies geography={GEO_URL}>
-                {({ geographies }) =>
-                  geographies.map((geo) => (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      style={{
-                        default: { fill: mapPalette.land,  stroke: mapPalette.stroke,      strokeWidth: 0.4, outline: 'none' },
-                        hover:   { fill: mapPalette.hover, stroke: mapPalette.hoverStroke, strokeWidth: 0.4, outline: 'none' },
-                        pressed: { fill: mapPalette.hover, outline: 'none' },
-                      }}
-                    />
-                  ))
-                }
-              </Geographies>
-
-              {!loading && displayedMarkers.map((station) => (
-                <StationMarker
-                  key={station.stationuuid}
-                  station={station}
-                  isActive={active?.stationuuid === station.stationuuid}
-                  isFav={favouriteSet.has(station.stationuuid)}
-                  onEnter={onMarkerEnter}
-                  onLeave={onMarkerLeave}
-                  onClick={playStation}
-                />
-              ))}
-            </ZoomableGroup>
-          </ComposableMap>
-
-          {/* Tooltip */}
-          {tooltip && (
-            <div style={{
-              position: 'absolute',
-              left: Math.min(tooltip.x + 12, (mapRef.current?.offsetWidth ?? 400) - 220),
-              top:  Math.max(tooltip.y - 60, 8),
-              pointerEvents: 'none', zIndex: 100,
-              background: 'rgba(10,12,20,0.95)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: '0.5rem 0.75rem',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.6)', maxWidth: 220,
-            }}>
-              <div style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)', marginBottom: '0.15rem' }}>
-                {tooltip.station.name}
+            <section className="radio-all">
+              <div className="radio-all-head">
+                <h3>{listTitle} <span className="radio-count">{listData.length.toLocaleString()}</span></h3>
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                {tooltip.station.country}
-                {tooltip.station.tags && <> · {tooltip.station.tags.split(',')[0]}</>}
-                {tooltip.station.bitrate > 0 && <> · {tooltip.station.bitrate}kbps</>}
-                {tooltip.station.codec && <> {tooltip.station.codec}</>}
+              <div className="radio-filters">
+                <div className="news-search">
+                  <Search size={14} className="news-search-icon" aria-hidden="true" />
+                  <input className="input" value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search stations, countries, genres…" aria-label="Search stations" />
+                  {search && <IconButton icon={X} label="Clear search" size="sm" className="news-search-clear" onClick={() => setSearch('')} />}
+                </div>
+                <select className="input radio-select" value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country">
+                  <option value="">🌍 Worldwide</option>
+                  {countryOptions.map((c) => <option key={c.code} value={c.code}>{flag(c.code)} {c.name} ({c.count})</option>)}
+                </select>
+                <select className="input radio-select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort by">
+                  <option value="popularity">Most popular</option>
+                  <option value="name">Name</option>
+                  <option value="bitrate">Best quality</option>
+                </select>
               </div>
-              <div style={{ fontSize: '0.62rem', color: '#a78bfa', marginTop: '0.25rem' }}>Click to play</div>
-            </div>
-          )}
-        </div>
 
-        {/* --- DESKTOP: list on the right --- */}
-        {!isMobile && showList && listPanel}
+              <div className="radio-list">
+                {loading && !data && !offline && [...Array(8)].map((_, i) => <Skeleton key={i} h={58} r={14} />)}
+                {!loading && listData.length === 0 && (
+                  <EmptyState icon={Search} title="No stations match" hint="Try another genre, country or search." />
+                )}
+                {listData.slice(0, shown).map((s) => (
+                  <StationRow key={s.stationuuid} station={s} status={stationStatus(s, radio)}
+                    favourite={favouriteSet.has(s.stationuuid)} onPlay={(st) => play(st)} onToggleFav={toggleFav} />
+                ))}
+              </div>
+              {listData.length > shown && (
+                <Button variant="secondary" block onClick={() => setShown((n) => n + PAGE)} style={{ marginTop: '0.75rem' }}>
+                  Show more · {(listData.length - shown).toLocaleString()} left
+                </Button>
+              )}
+            </section>
+          </div>
+        )}
+
+        {(isDesktop || view === 'map') && (
+          <div className={isDesktop ? 'radio-map-sticky' : 'radio-map-full'}>{map}</div>
+        )}
       </div>
 
-
-      <style>{`
-        @keyframes pulse-ring {
-          0%   { r: 5;  stroke-opacity: 0.6; }
-          100% { r: 12; stroke-opacity: 0;   }
-        }
-        @keyframes np-in {
-          from { opacity: 0; transform: translate(-50%, -6px); }
-          to   { opacity: 1; transform: translate(-50%, 0);    }
-        }
-      `}</style>
+      <Sheet open={keysOpen} onClose={() => setKeysOpen(false)} title="Keyboard shortcuts" width={380}>
+        <dl className="radio-keys">
+          {SHORTCUTS.map(([k, what]) => (
+            <div key={k}><dt><kbd>{k}</kbd></dt><dd>{what}</dd></div>
+          ))}
+        </dl>
+        <p className="settings-row-hint" style={{ marginTop: '0.75rem' }}>Media keys and headphone buttons work on every page.</p>
+      </Sheet>
     </div>
   )
 }
