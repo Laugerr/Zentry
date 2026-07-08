@@ -12,6 +12,7 @@ import { formatTime } from '../settings/format'
 import { MiniPlayer } from '../radio/NowPlaying'
 import { useRadio } from '../radio/radio-context'
 import { Onboarding } from '../onboarding/Onboarding'
+import { InstallBanner } from '../pwa/InstallUI'
 
 // `tone` picks the tool colour for the nav chip ('ink' = neutral). `short` is
 // the label in the sidebar and phone tab bar; `label` is the full name. To add
@@ -119,6 +120,7 @@ export default function Layout() {
     <div className="app-shell">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <Onboarding />
+      <InstallBanner />
 
       {/* ── Sidebar: full on desktop, icon rail on tablets, none on phones ── */}
       {!isMobile && (

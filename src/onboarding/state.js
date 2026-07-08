@@ -3,16 +3,17 @@
 const KEY   = 'zentry:onboarded'
 const EVENT = 'zentry:onboarding'
 
-// Anything here (other than the theme) means the person has used Zentry
-// before — existing users never see setup.
+// Anything here means the person has used Zentry before — existing users
+// never see setup. Bookkeeping keys written on every visit don't count.
 const DATA_PREFIXES = ['zentry:', 'lr:', 'nt:', 'ft:']
+const NOT_DATA = new Set(['zentry:theme', 'zentry:visits', 'zentry:install-dismissed'])
 
 export function needsOnboarding() {
   try {
     if (localStorage.getItem(KEY)) return false
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k !== 'zentry:theme' && DATA_PREFIXES.some((p) => k.startsWith(p))) {
+      if (k && !NOT_DATA.has(k) && DATA_PREFIXES.some((p) => k.startsWith(p))) {
         markOnboarded()
         return false
       }

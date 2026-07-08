@@ -5,6 +5,8 @@ import { registerSW } from 'virtual:pwa-register'
 import '@fontsource-variable/geist'
 import '@fontsource-variable/geist-mono'
 import './index.css'
+// Must load before React: browsers fire `beforeinstallprompt` once, early
+import './pwa/install'
 import App from './App.jsx'
 
 // Register the service worker. `autoUpdate` mode in vite.config means a new SW

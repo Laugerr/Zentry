@@ -5,6 +5,7 @@ import { Logo } from '../components/Logo'
 import { CityPicker } from '../components/CityPicker'
 import { useWeather } from '../hooks/useWeather'
 import { requestOnboarding } from '../onboarding/state'
+import { InstallSection } from '../pwa/InstallUI'
 import { useTheme } from '../hooks/useTheme'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useSettings } from '../settings/store'
@@ -151,6 +152,10 @@ export default function Settings() {
           set({ city })
           toast(city ? `Weather set to ${city.name}` : 'Weather location: automatic', { tone: 'success' })
         }} />
+      </Section>
+
+      <Section title="Install app">
+        <InstallSection />
       </Section>
 
       <Section title="Your data">
