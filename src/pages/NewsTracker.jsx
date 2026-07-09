@@ -7,6 +7,7 @@ import {
 import { InlineError, EmptyState as EmptyNotice } from '../components/states'
 import { Button, IconButton, Card, Tabs, Sheet, Skeleton, useToast } from '../components/ui'
 import { useSettings } from '../settings/store'
+import { COUNTRY_FACTS } from '../news/countryFacts'
 import { formatTime, formatTemp, formatWind } from '../settings/format'
 
 // ─── Feed catalogue ───────────────────────────────────────────────────────────
@@ -226,13 +227,12 @@ const writeJSON = (k, v)  => { try { localStorage.setItem(k, JSON.stringify(v)) 
 
 // ─── CountryStats component ───────────────────────────────────────────────────
 
+// Facts are bundled (src/news/countryFacts.js); only the capital's current
+// weather is fetched — and the card still renders if that fails.
 function CountryStats({ countryCode }) {
-  const [info, setInfo]       = useState(null)
+  const info = COUNTRY_FACTS[countryCode]
   const [weather, setWeather] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
   const [now, setNow]         = useState(new Date())
-  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -240,52 +240,34 @@ function CountryStats({ countryCode }) {
   }, [])
 
   useEffect(() => {
-    setInfo(null); setWeather(null); setLoading(true); setError(null)
-    async function load() {
-      try {
-        const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`)
-        if (!res.ok) throw new Error('Country data unavailable')
-        const [c] = await res.json()
-        setInfo(c)
-        const [lat, lon] = c.capitalInfo?.latlng ?? [c.latlng?.[0], c.latlng?.[1]]
-        if (lat != null && lon != null) {
-          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&wind_speed_unit=kmh`)
-          const wData = await wRes.json()
-          setWeather(wData.current_weather)
-        }
-      } catch (e) { setError(e.message) } finally { setLoading(false) }
-    }
-    load()
-  }, [countryCode, reloadTick])
+    setWeather(null)
+    const [lat, lon] = info?.capitalLatLng ?? []
+    if (lat == null) return
+    const ctrl = new AbortController()
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&wind_speed_unit=kmh`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((d) => setWeather(d.current_weather ?? null))
+      .catch(() => { /* weather is optional */ })
+    return () => ctrl.abort()
+  }, [info])
 
   const tz = COUNTRY_TIMEZONES[countryCode]
   const [settings] = useSettings()
   const localTime = tz ? formatTime(now, { timeZone: tz, seconds: true, settings }) : null
   const localDate = tz ? now.toLocaleDateString('en-GB', { timeZone: tz, weekday: 'short', day: '2-digit', month: 'short' }) : null
 
-  if (loading) return (
-    <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem' }}>
-      <div className="spinner" style={{ width: 16, height: 16 }} />
-      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading country stats…</span>
-    </div>
-  )
-  if (error) return (
-    <div className="card" style={{ padding: 0 }}>
-      <InlineError message={error} onRetry={() => setReloadTick((t) => t + 1)} />
-    </div>
-  )
   if (!info) return null
 
-  const currency   = Object.values(info.currencies ?? {})[0]
-  const languages  = Object.values(info.languages ?? {}).join(', ')
-  const dialCode   = (info.idd?.root ?? '') + (info.idd?.suffixes?.[0] ?? '')
-  const tld        = info.tld?.[0] ?? '—'
+  const currency   = info.currency
+  const languages  = info.languages.join(', ')
+  const dialCode   = info.dialCode
+  const tld        = info.tld || '—'
   const population = info.population ? info.population.toLocaleString() : '—'
   const area       = info.area ? info.area.toLocaleString() + ' km²' : '—'
-  const capital    = info.capital?.[0] ?? '—'
+  const capital    = info.capital || '—'
   const region     = [info.subregion, info.region].filter(Boolean).join(' · ')
   const landlocked = info.landlocked ? '🔒 Landlocked' : '🌊 Coastal'
-  const borders    = info.borders?.length ? `${info.borders.length} countries` : 'No land borders'
+  const borders    = info.borders ? `${info.borders} countr${info.borders === 1 ? 'y' : 'ies'}` : 'No land borders'
   const wCode = weather?.weathercode
   const wLabel = WMO[wCode] ?? '🌡️ Unknown'
 
@@ -305,7 +287,7 @@ function CountryStats({ countryCode }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ fontSize: '2rem', lineHeight: 1 }}>{info.flag ?? COUNTRY_FEEDS[countryCode]?.flag}</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>{info.name?.common}</div>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>{info.name}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{region}</div>
           </div>
         </div>
@@ -332,13 +314,13 @@ function CountryStats({ countryCode }) {
         )}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.5rem' }}>
-        <StatCard emoji="👥" label="Population"   value={population} />
+        <StatCard emoji="👥" label="Population"   value={population} sub="2023 estimate" />
         <StatCard emoji="📐" label="Area"          value={area} />
-        <StatCard emoji="💰" label="Currency"      value={currency?.name ?? '—'} sub={currency ? `${currency.symbol} · ${Object.keys(info.currencies)[0]}` : undefined} />
+        <StatCard emoji="💰" label="Currency"      value={currency?.name ?? '—'} sub={currency ? [currency.symbol, currency.code].filter(Boolean).join(' · ') : undefined} />
         <StatCard emoji="🗣️" label="Languages"    value={languages || '—'} />
         <StatCard emoji="📞" label="Dial Code"     value={dialCode || '—'} />
         <StatCard emoji="🌐" label="Internet TLD"  value={tld} />
-        <StatCard emoji="🚗" label="Driving Side"  value={info.car?.side === 'right' ? 'Right-hand' : info.car?.side === 'left' ? 'Left-hand' : '—'} />
+        <StatCard emoji="🚗" label="Driving Side"  value={info.drivesOn === 'left' ? 'Left-hand' : 'Right-hand'} />
         <StatCard emoji="🌊" label="Geography"     value={landlocked} />
         <StatCard emoji="🗺️" label="Land Borders" value={borders} />
       </div>
