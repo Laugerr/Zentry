@@ -5,6 +5,9 @@ import {
   Calendar, Layers, BarChart2, Undo2, Tag, Moon, Search,
 } from 'lucide-react'
 import { EmptyState as EmptyNotice } from '../components/states'
+import { Card, Tabs } from '../components/ui'
+import { useBreakpoint } from '../hooks/useBreakpoint'
+import './language.css'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const LEARN_STEPS         = [1, 10]
@@ -259,11 +262,11 @@ function AudioButton({ url, autoPlay }) {
       {url && <audio ref={audioRef} src={url} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />}
       <button onClick={toggle} disabled={!url} style={{
         width: 52, height: 52, borderRadius: '50%', border: 'none',
-        background: playing ? 'rgba(167,139,250,0.25)' : 'rgba(167,139,250,0.12)',
-        outline: `2px solid ${playing ? '#a78bfa' : 'rgba(167,139,250,0.35)'}`,
-        color: url ? '#a78bfa' : 'var(--text-muted)', cursor: url ? 'pointer' : 'not-allowed',
+        background: playing ? 'color-mix(in srgb, var(--tool-language) 25%, transparent)' : 'color-mix(in srgb, var(--tool-language) 12%, transparent)',
+        outline: `2px solid ${playing ? 'var(--tool-language)' : 'color-mix(in srgb, var(--tool-language) 35%, transparent)'}`,
+        color: url ? 'var(--tool-language)' : 'var(--text-muted)', cursor: url ? 'pointer' : 'not-allowed',
         display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
-        boxShadow: playing ? '0 0 16px rgba(167,139,250,0.35)' : 'none',
+        boxShadow: playing ? '0 0 16px color-mix(in srgb, var(--tool-language) 35%, transparent)' : 'none',
       }}>
         {playing ? <Pause size={20} /> : <Play size={20} />}
       </button>
@@ -288,7 +291,7 @@ function MediaField({ text = '', style = {}, autoPlay = false }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', ...style }}>
       {tokens.map((token, i) => {
         if (token.type === 'text') { const clean = renderTextToken(token.value); return clean ? <div key={i} style={{ whiteSpace: 'pre-wrap', textAlign: 'center' }}>{clean}</div> : null }
-        if (token.type === 'image') { const url = urls[token.filename]; return url ? <img key={i} src={url} alt="" style={{ maxWidth: '100%', maxHeight: '360px', borderRadius: 12, display: 'block', objectFit: 'contain', margin: '4px 0' }} /> : <div key={i} style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>⏳</div> }
+        if (token.type === 'image') { const url = urls[token.filename]; return url ? <img key={i} src={url} alt="" style={{ maxWidth: '100%', maxHeight: '360px', borderRadius: 12, display: 'block', objectFit: 'contain', margin: '4px 0' }} /> : <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>⏳</div> }
         if (token.type === 'sound') return <AudioButton key={i} url={urls[token.filename]} autoPlay={autoPlay && i === firstSoundIdx} />
         return null
       })}
@@ -333,10 +336,10 @@ async function parseApkg(file, deckId, onProgress) {
 }
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
-const panel     = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.1rem 1.2rem' }
-const btnPrimary = { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: '#fff', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 8, padding: '0.5rem 1.1rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }
-const btnGhost  = { background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.45rem 0.85rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }
-const labelStyle = { display: 'block', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }
+const panel     = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-card)', padding: '1.2rem 1.3rem' }
+const btnPrimary = { background: 'var(--ink)', color: 'var(--on-ink)', border: 'none', borderRadius: 999, padding: '0.6rem 1.2rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }
+const btnGhost  = { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.5rem 0.95rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }
+const labelStyle = { display: 'block', fontSize: '0.75rem', fontWeight: 650, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.45rem' }
 
 // ─── Deck ring (SVG donut) ────────────────────────────────────────────────────
 function DeckRing({ cards, deckId, size = 72 }) {
@@ -349,7 +352,7 @@ function DeckRing({ cards, deckId, size = 72 }) {
     review:   dc.filter(c => c.state === 'review' && (c.interval ?? 0) < 21).length,
     mastered: dc.filter(c => c.state === 'review' && (c.interval ?? 0) >= 21).length,
   }
-  const COLORS  = { new: '#60a5fa', learning: '#f87171', review: '#4ade80', mastered: '#a78bfa' }
+  const COLORS  = { new: 'var(--info)', learning: 'var(--danger)', review: 'var(--success)', mastered: 'var(--tool-language)' }
   const r       = (size - 10) / 2
   const circ    = 2 * Math.PI * r
   let offset    = 0
@@ -372,8 +375,8 @@ function DeckRing({ cards, deckId, size = 72 }) {
         ))}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: '#a78bfa', lineHeight: 1 }}>{masteredPct}%</span>
-        <span style={{ fontSize: '0.52rem', color: 'var(--text-muted)', marginTop: 1 }}>done</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--tool-language)', lineHeight: 1 }}>{masteredPct}%</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 1 }}>done</span>
       </div>
     </div>
   )
@@ -384,7 +387,7 @@ function GoalRing({ done, goal, size = 56 }) {
   const pct  = Math.min(done / Math.max(goal, 1), 1)
   const r    = (size - 8) / 2
   const circ = 2 * Math.PI * r
-  const color = pct >= 1 ? '#4ade80' : '#a78bfa'
+  const color = pct >= 1 ? 'var(--success)' : 'var(--tool-language)'
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
@@ -394,7 +397,7 @@ function GoalRing({ done, goal, size = 56 }) {
           style={{ transition: 'stroke-dasharray 0.5s ease' }} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color, lineHeight: 1 }}>{done}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700, color, lineHeight: 1 }}>{done}</span>
       </div>
     </div>
   )
@@ -428,10 +431,10 @@ function StatsTab({ cards, decks, streak }) {
   const heatColor = (count) => {
     if (!count) return 'var(--border)'
     const intensity = Math.min(count / maxCount, 1)
-    if (intensity < 0.25) return 'rgba(167,139,250,0.25)'
-    if (intensity < 0.5)  return 'rgba(167,139,250,0.45)'
-    if (intensity < 0.75) return 'rgba(167,139,250,0.7)'
-    return '#a78bfa'
+    if (intensity < 0.25) return 'color-mix(in srgb, var(--tool-language) 25%, transparent)'
+    if (intensity < 0.5)  return 'color-mix(in srgb, var(--tool-language) 45%, transparent)'
+    if (intensity < 0.75) return 'color-mix(in srgb, var(--tool-language) 70%, transparent)'
+    return 'var(--tool-language)'
   }
 
   const totalReviewed  = heatmap.reduce((s, d) => s + d.count, 0)
@@ -445,22 +448,22 @@ function StatsTab({ cards, decks, streak }) {
       {/* Top stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
         {[
-          { label: 'Today',         value: todayCards,    color: todayCards > 0 ? '#4ade80' : 'var(--text-muted)' },
-          { label: '90-day total',  value: totalReviewed, color: '#60a5fa' },
-          { label: 'Active days',   value: activeDays,    color: '#fbbf24' },
-          { label: 'Best streak',   value: `${streak.longest ?? 0}🔥`, color: '#f97316' },
-          { label: 'Study min today', value: studyMinToday > 0 ? `${studyMinToday}m` : '—', color: studyMinToday > 0 ? '#a78bfa' : 'var(--text-muted)' },
+          { label: 'Today',         value: todayCards,    color: todayCards > 0 ? 'var(--success)' : 'var(--text-muted)' },
+          { label: '90-day total',  value: totalReviewed, color: 'var(--info)' },
+          { label: 'Active days',   value: activeDays,    color: 'var(--warning)' },
+          { label: 'Best streak',   value: `${streak.longest ?? 0}🔥`, color: 'var(--orange)' },
+          { label: 'Study min today', value: studyMinToday > 0 ? `${studyMinToday}m` : '—', color: studyMinToday > 0 ? 'var(--tool-language)' : 'var(--text-muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ ...panel, padding: '0.9rem 1rem' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* Heatmap */}
       <div style={panel}>
-        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.85rem', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem', fontFamily: 'var(--font-sans)' }}>
           Study activity · last 90 days
         </div>
         <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 4 }}>
@@ -481,10 +484,10 @@ function StatsTab({ cards, decks, streak }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           Less
           {[0, 0.25, 0.5, 0.75, 1].map(v => (
-            <div key={v} style={{ width: 10, height: 10, borderRadius: 2, background: v === 0 ? 'var(--border)' : `rgba(167,139,250,${0.2 + v * 0.8})` }} />
+            <div key={v} style={{ width: 10, height: 10, borderRadius: 2, background: v === 0 ? 'var(--border)' : `color-mix(in srgb, var(--tool-language) ${Math.round((0.2 + v * 0.8) * 100)}%, transparent)` }} />
           ))}
           More
         </div>
@@ -492,7 +495,7 @@ function StatsTab({ cards, decks, streak }) {
 
       {/* Forecast */}
       <div style={panel}>
-        <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
           Due forecast · next 7 days
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', height: 80 }}>
@@ -500,16 +503,16 @@ function StatsTab({ cards, decks, streak }) {
             const pct = count / maxForecast
             return (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: count > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{count}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: count > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{count}</span>
                 <div style={{
                   width: '100%', borderRadius: '4px 4px 0 0',
                   height: `${Math.max(4, pct * 56)}px`,
                   background: i === 0
-                    ? 'linear-gradient(180deg, #a78bfa, #7c3aed)'
-                    : 'rgba(167,139,250,0.3)',
+                    ? 'linear-gradient(180deg, var(--tool-language), var(--tool-language))'
+                    : 'color-mix(in srgb, var(--tool-language) 30%, transparent)',
                   transition: 'height 0.4s ease',
                 }} />
-                <span style={{ fontSize: '0.6rem', color: i === 0 ? '#a78bfa' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 400 }}>{label}</span>
+                <span style={{ fontSize: '0.75rem', color: i === 0 ? 'var(--tool-language)' : 'var(--text-muted)', fontWeight: i === 0 ? 700 : 400 }}>{label}</span>
               </div>
             )
           })}
@@ -533,26 +536,26 @@ function StatsTab({ cards, decks, streak }) {
         return (
           <div style={panel}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-sans)' }}>
                 {monthName}
               </div>
               <div style={{ display: 'flex', gap: '0.35rem' }}>
                 <button onClick={() => setCalMonth(({ year: y, month: m }) => m === 0 ? { year: y-1, month: 11 } : { year: y, month: m-1 })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>‹</button>
-                <button onClick={() => setCalMonth({ year: now.getFullYear(), month: now.getMonth() })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.65rem' }}>Today</button>
+                <button onClick={() => setCalMonth({ year: now.getFullYear(), month: now.getMonth() })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>Today</button>
                 <button onClick={() => setCalMonth(({ year: y, month: m }) => m === 11 ? { year: y+1, month: 0 } : { year: y, month: m+1 })} style={{ ...btnGhost, padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>›</button>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 4 }}>
-              {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: '0.58rem', color: 'var(--text-muted)', fontWeight: 700, paddingBottom: 4 }}>{d}</div>)}
+              {['S','M','T','W','T','F','S'].map((d,i) => <div key={i} style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, paddingBottom: 4 }}>{d}</div>)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
               {cells.map((cell, i) => (
                 <div key={i} title={cell ? `${cell.ds}: ${cell.count} cards` : ''} style={{
                   aspectRatio: '1', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.65rem', fontWeight: isToday(cell) ? 700 : 400,
-                  background: !cell ? 'transparent' : cell.count === 0 ? 'var(--input-bg)' : `rgba(167,139,250,${0.2 + (cell.count / maxDay) * 0.75})`,
+                  fontSize: '0.75rem', fontWeight: isToday(cell) ? 700 : 400,
+                  background: !cell ? 'transparent' : cell.count === 0 ? 'var(--input-bg)' : `color-mix(in srgb, var(--tool-language) ${Math.round((0.2 + (cell.count / maxDay) * 0.75) * 100)}%, transparent)`,
                   color: isToday(cell) ? '#fff' : cell?.count > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
-                  outline: isToday(cell) ? '2px solid #a78bfa' : 'none',
+                  outline: isToday(cell) ? '2px solid var(--tool-language)' : 'none',
                   outlineOffset: -2,
                   cursor: cell?.count > 0 ? 'default' : 'default',
                 }}>
@@ -567,7 +570,7 @@ function StatsTab({ cards, decks, streak }) {
       {/* Deck breakdown */}
       {decks.length > 0 && (
         <div style={panel}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem', fontFamily: 'var(--font-sans)' }}>
             Deck breakdown
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -580,7 +583,7 @@ function StatsTab({ cards, decks, streak }) {
                 review:   dc.filter(c => c.state === 'review' && (c.interval ?? 0) < 21).length,
                 mastered: dc.filter(c => c.state === 'review' && (c.interval ?? 0) >= 21).length,
               }
-              const LABELS = { new: ['New','#60a5fa'], learning: ['Learning','#f87171'], review: ['Review','#4ade80'], mastered: ['Mastered','#a78bfa'] }
+              const LABELS = { new: ['New','var(--info)'], learning: ['Learning','var(--danger)'], review: ['Review','var(--success)'], mastered: ['Mastered','var(--tool-language)'] }
               return (
                 <div key={deck.id} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                   <DeckRing cards={cards} deckId={deck.id} size={68} />
@@ -588,11 +591,11 @@ function StatsTab({ cards, decks, streak }) {
                     <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
                     <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
                       {Object.entries(counts).filter(([,v]) => v > 0).map(([k, v]) => (
-                        <span key={k} style={{ fontSize: '0.68rem', color: LABELS[k][1], fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                        <span key={k} style={{ fontSize: '0.75rem', color: LABELS[k][1], fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                           {v} <span style={{ fontWeight: 400, opacity: 0.7 }}>{LABELS[k][0]}</span>
                         </span>
                       ))}
-                      {total === 0 && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No cards</span>}
+                      {total === 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No cards</span>}
                     </div>
                   </div>
                 </div>
@@ -601,10 +604,10 @@ function StatsTab({ cards, decks, streak }) {
           </div>
           {/* Legend */}
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-            {[['New','#60a5fa'],['Learning','#f87171'],['Review','#4ade80'],['Mastered','#a78bfa']].map(([l,c]) => (
+            {[['New','var(--info)'],['Learning','var(--danger)'],['Review','var(--success)'],['Mastered','var(--tool-language)']].map(([l,c]) => (
               <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{l}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{l}</span>
               </div>
             ))}
           </div>
@@ -661,13 +664,13 @@ function DictionaryPopup({ word, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ ...panel, width: '100%', maxWidth: 520, maxHeight: '78vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem' }}>
           <div>
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1.15rem', color: 'var(--text-primary)' }}>{word}</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 8 }}>Wiktionary</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>Wiktionary</span>
           </div>
           <button onClick={onClose} style={{ ...btnGhost, padding: '0.3rem 0.5rem' }}><X size={14} /></button>
         </div>
@@ -677,8 +680,8 @@ function DictionaryPopup({ word, onClose }) {
           <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: '0.65rem', marginBottom: '0.1rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             {langs.map(l => (
               <button key={l} onClick={() => switchLang(l)} style={{
-                padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s',
-                background: lang === l ? '#a78bfa' : 'var(--input-bg)',
+                padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s',
+                background: lang === l ? 'var(--tool-language)' : 'var(--input-bg)',
                 color: lang === l ? '#fff' : 'var(--text-muted)',
               }}>
                 {LANG_NAMES[l] ?? l}
@@ -690,14 +693,14 @@ function DictionaryPopup({ word, onClose }) {
         <div style={{ overflowY: 'auto', flex: 1, paddingTop: '0.5rem' }}>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1.5rem 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-              <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: '#a78bfa', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+              <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: 'var(--tool-language)', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
               Looking up…
             </div>
           )}
-          {error && <div style={{ padding: '1rem 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</div>}
+          {error && <div style={{ padding: '1rem 0', color: 'var(--danger)', fontSize: '0.82rem' }}>{error}</div>}
           {data && data.map((section, si) => (
             <div key={si} style={{ marginBottom: '1.1rem' }}>
-              <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.45rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--tool-language)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-sans)', marginBottom: '0.45rem' }}>
                 {section.partOfSpeech}
               </div>
               <ol style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -705,7 +708,7 @@ function DictionaryPopup({ word, onClose }) {
                   <li key={di} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
                     {stripHtml(def.definition)}
                     {def.examples?.[0] && (
-                      <div style={{ marginTop: 3, fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', paddingLeft: '0.5rem', borderLeft: '2px solid var(--border)' }}>
+                      <div style={{ marginTop: 3, fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', paddingLeft: '0.5rem', borderLeft: '2px solid var(--border)' }}>
                         {stripHtml(def.examples[0])}
                       </div>
                     )}
@@ -883,17 +886,17 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
         </div>
         {/* Animated streak */}
         {showStreak && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.75rem', borderRadius: 50, background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <Flame size={22} style={{ color: '#f97316' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 800, color: '#f97316' }}>{streak.current ?? 1}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.85rem 1.75rem', borderRadius: 50, background: 'color-mix(in srgb, var(--orange) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', animation: 'pop 0.5s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <Flame size={22} style={{ color: 'var(--orange)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--orange)' }}>{streak.current ?? 1}</span>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>day streak</span>
           </div>
         )}
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {[['Again','#f87171',stats.again],['Hard','#fbbf24',stats.hard],['Good','#60a5fa',stats.good],['Easy','#4ade80',stats.easy]].map(([l,c,v]) => (
+          {[['Again','var(--danger)',stats.again],['Hard','var(--warning)',stats.hard],['Good','var(--info)',stats.good],['Easy','var(--success)',stats.easy]].map(([l,c,v]) => (
             <div key={l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: c }}>{v}</span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{l}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{l}</span>
             </div>
           ))}
         </div>
@@ -906,10 +909,10 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
   if (!card) return <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No cards. <button onClick={onDone} style={{ ...btnGhost }}>Back</button></div>
 
   const RATINGS = [
-    { label: 'Again', key: 0, color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
-    { label: 'Hard',  key: 1, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)'  },
-    { label: 'Good',  key: 2, color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)'  },
-    { label: 'Easy',  key: 3, color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)'  },
+    { label: 'Again', key: 0, color: 'var(--danger)', bg: 'color-mix(in srgb, var(--danger) 12%, transparent)', border: 'color-mix(in srgb, var(--danger) 30%, transparent)' },
+    { label: 'Hard',  key: 1, color: 'var(--warning)', bg: 'color-mix(in srgb, var(--warning) 12%, transparent)',  border: 'color-mix(in srgb, var(--warning) 30%, transparent)'  },
+    { label: 'Good',  key: 2, color: 'var(--info)', bg: 'color-mix(in srgb, var(--info) 12%, transparent)',  border: 'color-mix(in srgb, var(--info) 30%, transparent)'  },
+    { label: 'Easy',  key: 3, color: 'var(--success)', bg: 'color-mix(in srgb, var(--success) 12%, transparent)',  border: 'color-mix(in srgb, var(--success) 30%, transparent)'  },
   ]
 
   const stateLabel = card.state === 'new' || !card.state ? 'New' : card.state === 'learning' ? 'Learning' : card.state === 'relearn' ? 'Relearn' : 'Review'
@@ -922,14 +925,14 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button onClick={onDone} aria-label="Exit review" style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><ArrowLeft size={14} /></button>
         {undoStack.current.length > 0 && (
-          <button onClick={doUndo} aria-label="Undo last rating" title="Undo last rating (Ctrl+Z)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}>
+          <button onClick={doUndo} aria-label="Undo last rating" title="Undo last rating (Ctrl+Z)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 30%, transparent)' }}>
             <Undo2 size={14} />
           </button>
         )}
-        <button onClick={suspendCard} aria-label="Suspend card" title="Suspend card (skip forever until unsuspended)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}>
+        <button onClick={suspendCard} aria-label="Suspend card" title="Suspend card (skip forever until unsuspended)" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 25%, transparent)' }}>
           <EyeOff size={13} />
         </button>
-        <button onClick={buryCard} aria-label="Bury card until tomorrow" title="Bury until tomorrow" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#60a5fa', borderColor: 'rgba(96,165,250,0.25)' }}>
+        <button onClick={buryCard} aria-label="Bury card until tomorrow" title="Bury until tomorrow" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 25%, transparent)' }}>
           <Moon size={13} />
         </button>
         <div style={{ flex: 1 }} />
@@ -940,10 +943,10 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
           aria-label="Focus timer (double-click to reset)"
           title={pomodoro.running ? 'Pause timer (double-click to reset)' : 'Start 25-min focus timer'}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, transition: 'all 0.2s',
-            background: pomodoro.phase === 'work' ? 'rgba(249,115,22,0.12)' : 'rgba(96,165,250,0.12)',
-            color:      pomodoro.phase === 'work' ? '#f97316' : '#60a5fa',
-            outline:    pomodoro.running ? `1px solid ${pomodoro.phase === 'work' ? 'rgba(249,115,22,0.35)' : 'rgba(96,165,250,0.35)'}` : '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s',
+            background: pomodoro.phase === 'work' ? 'color-mix(in srgb, var(--orange) 12%, transparent)' : 'color-mix(in srgb, var(--info) 12%, transparent)',
+            color:      pomodoro.phase === 'work' ? 'var(--orange)' : 'var(--info)',
+            outline:    pomodoro.running ? `1px solid ${pomodoro.phase === 'work' ? 'color-mix(in srgb, var(--orange) 35%, transparent)' : 'color-mix(in srgb, var(--info) 35%, transparent)'}` : '1px solid var(--border)',
           }}
         >
           {pomodoro.phase === 'work' ? '🍅' : '☕'} {fmtTime(pomodoro.left)}
@@ -951,9 +954,9 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
           {pomodoro.running  && <Pause size={10} style={{ opacity: 0.6 }} />}
         </button>
         <div style={{ display: 'flex', gap: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700 }}>
-          <span style={{ color: '#f87171' }}>{remaining.learning}</span>
-          <span style={{ color: '#4ade80' }}>{remaining.reviews}</span>
-          <span style={{ color: '#60a5fa' }}>{remaining.newCards}</span>
+          <span style={{ color: 'var(--danger)' }}>{remaining.learning}</span>
+          <span style={{ color: 'var(--success)' }}>{remaining.reviews}</span>
+          <span style={{ color: 'var(--info)' }}>{remaining.newCards}</span>
         </div>
       </div>
 
@@ -975,11 +978,11 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
         >
           {/* State badge + tags */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'var(--input-bg)', padding: '2px 8px', borderRadius: 99 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'var(--input-bg)', padding: '2px 8px', borderRadius: 99 }}>
               {stateLabel}
             </span>
             {tags.slice(0, 4).map(t => (
-              <span key={t} style={{ fontSize: '0.58rem', color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', padding: '1px 7px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <span key={t} style={{ fontSize: '0.75rem', color: 'var(--tool-language)', background: 'color-mix(in srgb, var(--tool-language) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--tool-language) 20%, transparent)', padding: '1px 7px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                 <Tag size={8} /> {t}
               </span>
             ))}
@@ -996,16 +999,16 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
             <>
               <div style={{ width: '100%', height: 1, background: 'var(--border)' }} />
               <div style={{ textAlign: 'center', width: '100%' }}>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Answer</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Answer</div>
                 <MediaField
                   text={card.back}
                   autoPlay={true}
-                  style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', fontWeight: 600, color: '#a78bfa', lineHeight: 1.4, textAlign: 'center', width: '100%' }}
+                  style={{ fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', fontWeight: 600, color: 'var(--tool-language)', lineHeight: 1.4, textAlign: 'center', width: '100%' }}
                 />
               </div>
             </>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               <Eye size={12} /> click or Space to reveal
             </div>
           )}
@@ -1020,14 +1023,14 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
             const hint = preview.state === 'learning' || preview.state === 'relearn' ? `${LEARN_STEPS[preview.step ?? 0] ?? RELEARN_STEPS[0]}m` : `${preview.interval}d`
             return (
               <button key={key} onClick={() => rate(card, key)} style={{
-                padding: '0.75rem 0.5rem', borderRadius: 10,
+                padding: '0.85rem 0.5rem', minHeight: 60, borderRadius: 'var(--radius-md)',
                 border: `1px solid ${border}`, background: bg, color,
-                fontFamily: 'var(--font-mono)', fontWeight: 700,
-                fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.15s',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                fontFamily: 'var(--font-sans)', fontWeight: 700,
+                fontSize: '0.95rem', cursor: 'pointer', transition: 'transform 0.1s ease',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               }}>
                 {label}
-                <span style={{ fontSize: '0.58rem', opacity: 0.7, fontWeight: 400 }}>{hint}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', opacity: 0.75, fontWeight: 500 }}>{hint}</span>
               </button>
             )
           })}
@@ -1036,10 +1039,10 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
 
       {/* Word selection → dictionary lookup */}
       {selectedWord && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 8, fontSize: '0.78rem' }}>
-          <Search size={13} style={{ color: '#a78bfa', flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: 'color-mix(in srgb, var(--tool-language) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--tool-language) 20%, transparent)', borderRadius: 8, fontSize: '0.78rem' }}>
+          <Search size={13} style={{ color: 'var(--tool-language)', flexShrink: 0 }} />
           <span style={{ color: 'var(--text-muted)' }}>Selected: <strong style={{ color: 'var(--text-primary)' }}>{selectedWord}</strong></span>
-          <button onClick={() => { setDictWord(selectedWord); setSelectedWord('') }} style={{ ...btnPrimary, padding: '0.25rem 0.7rem', fontSize: '0.72rem', marginLeft: 'auto' }}>
+          <button onClick={() => { setDictWord(selectedWord); setSelectedWord('') }} style={{ ...btnPrimary, padding: '0.25rem 0.7rem', fontSize: '0.75rem', marginLeft: 'auto' }}>
             Look up
           </button>
           <button onClick={() => setSelectedWord('')} style={{ ...btnGhost, padding: '0.25rem 0.4rem' }}><X size={11} /></button>
@@ -1047,9 +1050,9 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
       )}
 
       {flipPhase === 'front' && (
-        <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 2 }}>
+        <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 2 }}>
           {[['Space','reveal'],['1–4','rate'],['S','suspend'],['B','bury'],['D','dict'],['Ctrl+Z','undo']].map(([k,v],i,a) => (
-            <span key={k}><kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4, fontSize: '0.62rem' }}>{k}</kbd> {v}{i < a.length-1 ? <span style={{ opacity: 0.35 }}> · </span> : null}</span>
+            <span key={k}><kbd style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 4, fontSize: '0.75rem' }}>{k}</kbd> {v}{i < a.length-1 ? <span style={{ opacity: 0.35 }}> · </span> : null}</span>
           ))}
         </div>
       )}
@@ -1060,75 +1063,63 @@ function ReviewSession({ cards: allCards, deckId, deck, onDone, onUpdateCard }) 
 }
 
 // ─── Hero banner ─────────────────────────────────────────────────────────────
+function HeroStat({ icon: Icon, value, label, tone }) {
+  return (
+    <div className="lp-stat">
+      <span className={`lp-stat-icon lp-tone-${tone}`} aria-hidden="true"><Icon size={16} /></span>
+      <div>
+        <div className="lp-stat-value">{value}</div>
+        <div className="lp-stat-label">{label}</div>
+      </div>
+    </div>
+  )
+}
+
 function HeroBanner({ streak, allDue, totalCards, decks, onStudyAll, reviewedToday, goal, onGoalChange }) {
   const hour     = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const [editing, setEditing] = useState(false)
   const [goalInput, setGoalInput] = useState(String(goal))
+  const saveGoalInput = () => { onGoalChange(Math.max(1, parseInt(goalInput) || 20)); setEditing(false) }
+  const goalDone = reviewedToday >= goal
+
   return (
-    <div style={{ ...panel, background: 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(167,139,250,0.04) 100%)', borderColor: 'rgba(167,139,250,0.2)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+    <Card tone="language" padding="none" className="lp-hero">
+      <div className="lp-hero-top">
         <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
-            {greeting} <span style={{ fontSize: '1.1rem' }}>👋</span>
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 3 }}>
-            {allDue > 0 ? `${allDue} cards waiting for review` : totalCards > 0 ? 'All caught up — great work!' : 'Import a deck to get started'}
-          </div>
+          <h2 className="lp-hero-title">{greeting}</h2>
+          <p className="lp-hero-sub">
+            {allDue > 0 ? <><b>{allDue} cards</b> waiting for review</> : totalCards > 0 ? 'All caught up — great work.' : 'Create a deck or import one from Anki to get started.'}
+          </p>
         </div>
-        {allDue > 0 && (
-          <button onClick={onStudyAll} style={{ ...btnPrimary, padding: '0.65rem 1.4rem', fontSize: '0.88rem', animation: 'pop 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <Play size={14} /> Study all ({allDue})
-          </button>
-        )}
+        {allDue > 0 && <button onClick={onStudyAll} className="lp-study-all" style={btnPrimary}><Play size={15} fill="currentColor" /> Study all · {allDue}</button>}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '1.1rem', flexWrap: 'wrap' }}>
-        {/* Goal ring */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <GoalRing done={reviewedToday} goal={goal} size={52} />
+      <div className="lp-stats">
+        <div className="lp-stat lp-goal">
+          <GoalRing done={reviewedToday} goal={goal} size={48} />
           <div>
             {editing ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)}
-                  style={{ width: 52, fontSize: '0.8rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text-primary)', padding: '2px 6px', fontFamily: 'inherit' }}
-                  onKeyDown={e => { if (e.key === 'Enter') { onGoalChange(parseInt(goalInput) || 20); setEditing(false) } if (e.key === 'Escape') setEditing(false) }}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" min="1" value={goalInput} onChange={e => setGoalInput(e.target.value)} aria-label="Daily goal"
+                  className="input" style={{ width: 70, padding: '0.3rem 0.5rem' }}
+                  onKeyDown={e => { if (e.key === 'Enter') saveGoalInput(); if (e.key === 'Escape') setEditing(false) }}
                   autoFocus />
-                <button onClick={() => { onGoalChange(parseInt(goalInput) || 20); setEditing(false) }} style={{ ...btnPrimary, padding: '2px 7px', fontSize: '0.7rem' }}><Check size={10} /></button>
+                <button onClick={saveGoalInput} aria-label="Save goal" style={{ ...btnPrimary, padding: '0.35rem 0.6rem' }}><Check size={13} /></button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: reviewedToday >= goal ? '#4ade80' : 'var(--text-primary)' }}>{reviewedToday}/{goal}</div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>daily goal</div>
+              <button onClick={() => setEditing(true)} className="lp-goal-btn" aria-label={`Daily goal ${reviewedToday} of ${goal}. Change goal`}>
+                <div className="lp-stat-value" style={{ color: goalDone ? 'var(--success)' : undefined }}>{reviewedToday}<span className="lp-stat-of">/{goal}</span></div>
+                <div className="lp-stat-label">daily goal · edit</div>
               </button>
             )}
           </div>
         </div>
-
-        <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-
-        {/* Streak */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Flame size={18} style={{ color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }} />
-          <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: (streak.current ?? 0) > 0 ? '#f97316' : 'var(--text-muted)' }}>{streak.current ?? 0}</div>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>day streak</div>
-          </div>
-        </div>
-
-        <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-
-        {[
-          { val: totalCards, label: 'cards',  color: '#60a5fa' },
-          { val: decks.length, label: 'decks', color: '#a78bfa' },
-        ].map(({ val, label, color }) => (
-          <div key={label}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color }}>{val}</div>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{label}</div>
-          </div>
-        ))}
+        <HeroStat icon={Flame} value={streak.current ?? 0} label="day streak" tone="orange" />
+        <HeroStat icon={Layers} value={totalCards} label="cards" tone="info" />
+        <HeroStat icon={BookOpen} value={decks.length} label={decks.length === 1 ? 'deck' : 'decks'} tone="language" />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -1143,8 +1134,8 @@ function WordOfDay({ cards }) {
   const [revealed, setRevealed] = useState(false)
   if (!card) return null
   return (
-    <div style={{ ...panel, borderColor: 'rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.04)' }}>
-      <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.65rem' }}>
+    <div style={{ ...panel, borderColor: 'color-mix(in srgb, var(--tool-language) 20%, transparent)', background: 'color-mix(in srgb, var(--tool-language) 4%, transparent)' }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--tool-language)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-sans)', marginBottom: '0.65rem' }}>
         ✦ Word of the day
       </div>
       <div style={{ fontSize: 'clamp(1.1rem,2.5vw,1.5rem)', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', padding: '0.5rem 0' }}>
@@ -1152,8 +1143,8 @@ function WordOfDay({ cards }) {
       </div>
       {revealed ? (
         <div style={{ textAlign: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Answer</div>
-          <div style={{ fontSize: '1rem', fontWeight: 600, color: '#a78bfa' }}>{card.back}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Answer</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--tool-language)' }}>{card.back}</div>
         </div>
       ) : (
         <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
@@ -1174,8 +1165,8 @@ function StrugglingCards({ cards, onStudy }) {
   return (
     <div style={panel}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)' }}>Struggling cards</span>
-        <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 7px', borderRadius: 99 }}>{struggling.length}</span>
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-sans)' }}>Struggling cards</span>
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 25%, transparent)', padding: '1px 7px', borderRadius: 99 }}>{struggling.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.85rem' }}>
         {struggling.map(c => (
@@ -1183,11 +1174,11 @@ function StrugglingCards({ cards, onStudy }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.front}</div>
             </div>
-            <span style={{ fontSize: '0.62rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700, flexShrink: 0 }}>{c.lapses} lapses</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)', fontWeight: 700, flexShrink: 0 }}>{c.lapses} lapses</span>
           </div>
         ))}
       </div>
-      <button onClick={onStudy} style={{ ...btnGhost, fontSize: '0.78rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}>
+      <button onClick={onStudy} style={{ ...btnGhost, fontSize: '0.78rem', color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 30%, transparent)' }}>
         <Play size={11} /> Practice these
       </button>
     </div>
@@ -1204,12 +1195,12 @@ function RecentlyMastered({ cards }) {
   if (!mastered.length) return null
   return (
     <div style={panel}>
-      <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', marginBottom: '0.65rem' }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-sans)', marginBottom: '0.65rem' }}>
         Recently in review
       </div>
       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         {mastered.map(c => (
-          <span key={c.id} style={{ fontSize: '0.72rem', color: '#4ade80', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '3px 10px', borderRadius: 99, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span key={c.id} style={{ fontSize: '0.75rem', color: 'var(--success)', background: 'color-mix(in srgb, var(--success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)', padding: '3px 10px', borderRadius: 99, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {c.front}
           </span>
         ))}
@@ -1225,14 +1216,11 @@ function DeckGridCard({ deck, cards, onReview, onEdit }) {
   const total = cards.filter(c => c.deckId === deck.id).length
   const due   = learning.length + reviews.length + newCards.length
   return (
-    <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', transition: 'transform 0.15s, box-shadow 0.15s' }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)' }}
-      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
-    >
+    <div className="lp-deck-card">
       {/* Cover */}
       <div style={{ background: dc.gradient, padding: '1.5rem 1rem 1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', minHeight: 80 }}>
         <span style={{ fontSize: '1.8rem', lineHeight: 1 }}>{dc.emoji}</span>
-        <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 99, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-primary) 25%, transparent)', borderRadius: 99, padding: '0.2rem 0.6rem', fontSize: '0.75rem', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-mono)' }}>
           {total} cards
         </div>
       </div>
@@ -1240,10 +1228,10 @@ function DeckGridCard({ deck, cards, onReview, onEdit }) {
       <div style={{ background: 'var(--bg-card)', padding: '0.85rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: 1 }}>
-          {learning.length > 0 && <span style={{ fontSize: '0.65rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
-          {reviews.length  > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
-          {newCards.length > 0 && <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
-          {due === 0 && total > 0 && <span style={{ fontSize: '0.65rem', color: '#4ade80' }}>✓ caught up</span>}
+          {learning.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+          {reviews.length  > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+          {newCards.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--info)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
+          {due === 0 && total > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>✓ caught up</span>}
         </div>
         <div style={{ display: 'flex', gap: '0.35rem' }}>
           <button onClick={() => onEdit(deck)} style={{ ...btnGhost, padding: '0.35rem 0.55rem', flex: '0 0 auto' }}><Settings size={12} /></button>
@@ -1268,11 +1256,11 @@ function DeckRow({ deck, cards, onReview, onEdit }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deck.name}</div>
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: 5, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{total} cards</span>
-          {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
-          {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
-          {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
-          {due === 0 && total > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>All caught up ✓</span>}
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{total} cards</span>
+          {learning.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+          {reviews.length  > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+          {newCards.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--info)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
+          {due === 0 && total > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>All caught up ✓</span>}
         </div>
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
@@ -1288,10 +1276,10 @@ function DeckRow({ deck, cards, onReview, onEdit }) {
 // ─── Ease badge ───────────────────────────────────────────────────────────────
 function EaseBadge({ ease }) {
   if (!ease) return null
-  const color = ease >= 2.5 ? '#4ade80' : ease >= 2.0 ? '#fbbf24' : '#f87171'
+  const color = ease >= 2.5 ? 'var(--success)' : ease >= 2.0 ? 'var(--warning)' : 'var(--danger)'
   const label = ease >= 2.5 ? 'Easy' : ease >= 2.0 ? 'Medium' : 'Hard'
   return (
-    <span style={{ fontSize: '0.58rem', fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}44`, padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: '0.75rem', fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}44`, padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
       {label} {ease.toFixed(1)}
     </span>
   )
@@ -1300,7 +1288,7 @@ function EaseBadge({ ease }) {
 // ─── Card stats drawer ────────────────────────────────────────────────────────
 function CardStatsDrawer({ card, onClose }) {
   const history = card.history ?? []
-  const RCOLORS = ['#f87171','#fbbf24','#60a5fa','#4ade80']
+  const RCOLORS = ['var(--danger)','var(--warning)','var(--info)','var(--success)']
   const RLABELS = ['Again','Hard','Good','Easy']
   const maxInterval = Math.max(...history.map(h => h.interval), 1)
 
@@ -1310,7 +1298,7 @@ function CardStatsDrawer({ card, onClose }) {
     : '—'
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'color-mix(in srgb, var(--bg-primary) 55%, transparent)', backdropFilter: 'blur(4px)' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={{ ...panel, width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
@@ -1324,27 +1312,27 @@ function CardStatsDrawer({ card, onClose }) {
         {/* Stats grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
           {[
-            { label: 'State',    value: card.state ?? 'new',             color: card.state === 'review' ? '#4ade80' : card.state === 'learning' || card.state === 'relearn' ? '#f87171' : '#60a5fa' },
+            { label: 'State',    value: card.state ?? 'new',             color: card.state === 'review' ? 'var(--success)' : card.state === 'learning' || card.state === 'relearn' ? 'var(--danger)' : 'var(--info)' },
             { label: 'Interval', value: card.interval > 0 ? `${card.interval}d` : '—', color: 'var(--text-primary)' },
-            { label: 'Next due', value: dueStr,                          color: '#a78bfa' },
-            { label: 'Reviews',  value: card.reps ?? 0,                  color: '#4ade80' },
-            { label: 'Lapses',   value: card.lapses ?? 0,                color: (card.lapses ?? 0) > 0 ? '#f87171' : 'var(--text-muted)' },
-            { label: 'Ease',     value: (card.ease ?? DEFAULT_EASE).toFixed(2), color: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171' },
+            { label: 'Next due', value: dueStr,                          color: 'var(--tool-language)' },
+            { label: 'Reviews',  value: card.reps ?? 0,                  color: 'var(--success)' },
+            { label: 'Lapses',   value: card.lapses ?? 0,                color: (card.lapses ?? 0) > 0 ? 'var(--danger)' : 'var(--text-muted)' },
+            { label: 'Ease',     value: (card.ease ?? DEFAULT_EASE).toFixed(2), color: (card.ease ?? DEFAULT_EASE) >= 2.5 ? 'var(--success)' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? 'var(--warning)' : 'var(--danger)' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'var(--input-bg)', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
             </div>
           ))}
         </div>
 
         {/* Ease bar */}
         <div>
-          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: 'var(--font-mono)' }}>Ease factor</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontFamily: 'var(--font-sans)' }}>Ease factor</div>
           <div style={{ height: 6, borderRadius: 99, background: 'var(--border)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(100, ((card.ease ?? DEFAULT_EASE) / 4) * 100)}%`, background: (card.ease ?? DEFAULT_EASE) >= 2.5 ? '#4ade80' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? '#fbbf24' : '#f87171', transition: 'width 0.4s ease' }} />
+            <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(100, ((card.ease ?? DEFAULT_EASE) / 4) * 100)}%`, background: (card.ease ?? DEFAULT_EASE) >= 2.5 ? 'var(--success)' : (card.ease ?? DEFAULT_EASE) >= 2.0 ? 'var(--warning)' : 'var(--danger)', transition: 'width 0.4s ease' }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: 3 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>
             <span>1.3 (hard)</span><span>2.5 (default)</span><span>4.0 (easy)</span>
           </div>
         </div>
@@ -1352,7 +1340,7 @@ function CardStatsDrawer({ card, onClose }) {
         {/* Review history */}
         {history.length > 0 && (
           <div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem', fontFamily: 'var(--font-sans)' }}>
               Review history · last {history.length} reviews
             </div>
             {/* Rating dots */}
@@ -1367,7 +1355,7 @@ function CardStatsDrawer({ card, onClose }) {
                 <div key={i} title={`${h.interval}d`} style={{ flex: 1, minWidth: 4, maxWidth: 20, borderRadius: '3px 3px 0 0', background: RCOLORS[h.rating], height: `${Math.max(4, (h.interval / maxInterval) * 44)}px`, opacity: 0.75, transition: 'height 0.3s ease' }} />
               ))}
             </div>
-            <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: 3 }}>Interval (days) per review</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>Interval (days) per review</div>
           </div>
         )}
         {history.length === 0 && (
@@ -1414,13 +1402,13 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '2rem 1rem', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '2rem 1rem', background: 'color-mix(in srgb, var(--bg-primary) 65%, transparent)', backdropFilter: 'blur(4px)', overflowY: 'auto' }}>
       <div style={{ ...panel, width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontWeight: 700, fontSize: '1rem' }}>{deck.name}</span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => exportDeckCSV(deck, deckCards)} title="Export as CSV" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)', fontSize: '0.72rem' }}>↓ CSV</button>
-            <button onClick={() => { if (confirm(`Delete "${deck.name}"?`)) onDeleteDeck(deck.id) }} style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.25)' }}><Trash2 size={13} /></button>
+            <button onClick={() => exportDeckCSV(deck, deckCards)} title="Export as CSV" style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: 'var(--success)', borderColor: 'color-mix(in srgb, var(--success) 25%, transparent)', fontSize: '0.75rem' }}>↓ CSV</button>
+            <button onClick={() => { if (confirm(`Delete "${deck.name}"?`)) onDeleteDeck(deck.id) }} style={{ ...btnGhost, padding: '0.35rem 0.6rem', color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 25%, transparent)' }}><Trash2 size={13} /></button>
             <button onClick={onClose} style={{ ...btnGhost, padding: '0.35rem 0.6rem' }}><X size={14} /></button>
           </div>
         </div>
@@ -1443,7 +1431,7 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 420, overflowY: 'auto' }}>
             {deckCards.length === 0 && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No cards yet.</div>}
             {deckCards.map(c => {
-              const stateColor = c.state === 'review' ? '#4ade80' : c.state === 'learning' || c.state === 'relearn' ? '#f87171' : '#60a5fa'
+              const stateColor = c.state === 'review' ? 'var(--success)' : c.state === 'learning' || c.state === 'relearn' ? 'var(--danger)' : 'var(--info)'
               return (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.65rem 0.75rem', background: 'var(--input-bg)', borderRadius: 8, cursor: 'pointer' }} onClick={() => setStatsCard(c)}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1451,21 +1439,21 @@ function DeckEditor({ deck, cards, onClose, onSaveCards, onDeleteDeck, onUpdateD
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>{c.back}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {c.suspended
-                        ? <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Suspended</span>
-                        : <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
+                        ? <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb, var(--danger) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 25%, transparent)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Suspended</span>
+                        : <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: stateColor }}>{c.state ?? 'new'}{c.reps > 0 ? ` · ${c.interval}d · ${c.reps}r` : ''}</span>
                       }
-                      {c.buried === todayStr() && <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Buried today</span>}
+                      {c.buried === todayStr() && <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--info)', background: 'color-mix(in srgb, var(--info) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--info) 25%, transparent)', padding: '1px 6px', borderRadius: 99, fontFamily: 'var(--font-mono)' }}>Buried today</span>}
                       {c.reps > 0 && !c.suspended && <EaseBadge ease={c.ease} />}
-                      {c.lapses > 0 && <span style={{ fontSize: '0.58rem', color: '#f87171', fontFamily: 'var(--font-mono)' }}>{c.lapses} lapses</span>}
+                      {c.lapses > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)' }}>{c.lapses} lapses</span>}
                       {c.tags && c.tags.split(/\s+/).filter(Boolean).map(t => (
-                        <span key={t} style={{ fontSize: '0.58rem', color: 'var(--text-muted)', background: 'var(--border)', padding: '0 5px', borderRadius: 99 }}>{t}</span>
+                        <span key={t} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--border)', padding: '0 5px', borderRadius: 99 }}>{t}</span>
                       ))}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} aria-label="Unsuspend card" title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#4ade80', borderColor: 'rgba(74,222,128,0.25)' }}><Eye size={11} /></button>}
+                    {c.suspended && <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, suspended: false } : x))} aria-label="Unsuspend card" title="Unsuspend" style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: 'var(--success)', borderColor: 'color-mix(in srgb, var(--success) 25%, transparent)' }}><Eye size={11} /></button>}
                     <button onClick={() => onSaveCards(cards.map(x => x.id === c.id ? { ...x, state: 'new', due: null, interval: 0, ease: DEFAULT_EASE, reps: 0, lapses: 0, step: 0, lastReviewed: null, suspended: false, buried: null } : x))} aria-label="Reset card progress" title="Reset" style={{ ...btnGhost, padding: '0.3rem 0.45rem' }}><RotateCcw size={11} /></button>
-                    <button onClick={() => onSaveCards(cards.filter(x => x.id !== c.id))} style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}><Trash2 size={11} /></button>
+                    <button onClick={() => onSaveCards(cards.filter(x => x.id !== c.id))} style={{ ...btnGhost, padding: '0.3rem 0.45rem', color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 20%, transparent)' }}><Trash2 size={11} /></button>
                   </div>
                 </div>
               )
@@ -1531,12 +1519,12 @@ function ImportPanel({ decks, onImport }) {
         </div>
         {status && (status === 'loading' || status.loading) && (
           <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: '#a78bfa', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+            <div style={{ width: 14, height: 14, borderRadius: 99, border: '2px solid var(--border)', borderTopColor: 'var(--tool-language)', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
             {status.msg ?? 'Parsing…'}
           </div>
         )}
         {status && !status.loading && status !== 'loading' && (
-          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: status.ok ? '#4ade80' : '#f87171' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: status.ok ? 'var(--success)' : 'var(--danger)' }}>
             {status.ok ? <Check size={14} /> : <AlertCircle size={14} />}
             {status.msg}
           </div>
@@ -1558,6 +1546,7 @@ export default function LanguagePlanner() {
   const [gridView,    setGridView]    = useState(false)
   const [goal,        setGoal]        = useState(loadGoal)
   const [reviewedToday, setReviewedToday] = useState(getTotalReviewedToday)
+  const { isMobile } = useBreakpoint()
 
   useEffect(() => { saveDecks(decks) }, [decks])
   useEffect(() => { saveCards(cards) }, [cards])
@@ -1582,7 +1571,7 @@ export default function LanguagePlanner() {
   if (reviewing) {
     const deck = decks.find(d => d.id === reviewing.id) ?? reviewing
     return (
-      <div style={{ maxWidth: 740, margin: '0 auto', padding: '1rem 0' }}>
+      <div className="lp-review-wrap">
         <ReviewSession cards={cards} deckId={reviewing.id ?? '__all__'} deck={deck}
           onDone={() => { setReviewing(null); setStreak(loadStreak()); refreshReviewedToday() }}
           onUpdateCard={updateCard} />
@@ -1593,7 +1582,13 @@ export default function LanguagePlanner() {
   const dueByDeck       = decks.map(d => { const q = buildQueue(cards, d.id, d); return { deck: d, ...q, due: q.learning.length + q.reviews.length + q.newCards.length } }).filter(x => x.due > 0)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 900 }}>
+    <div className="lp-page">
+      {!isMobile && (
+        <div className="lp-head">
+          <h1 className="lp-title">Language</h1>
+          <p className="lp-subtitle">Spaced-repetition flashcards — a few minutes a day.</p>
+        </div>
+      )}
 
       {/* Hero banner */}
       <HeroBanner
@@ -1603,22 +1598,12 @@ export default function LanguagePlanner() {
       />
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--input-bg)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
-        {[
-          ['today', allDue > 0 ? `Today (${allDue})` : 'Today'],
-          ['decks',  `Decks${decks.length ? ` (${decks.length})` : ''}`],
-          ['stats',  'Stats'],
-          ['import', 'Import .apkg'],
-        ].map(([k,l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{
-            padding: '0.45rem 1.1rem', borderRadius: 7, border: 'none', cursor: 'pointer',
-            fontSize: '0.8rem', fontWeight: 600, fontFamily: 'inherit',
-            background: tab === k ? 'var(--bg-card)' : 'transparent',
-            color: tab === k ? 'var(--text-primary)' : k === 'today' && allDue > 0 && tab !== 'today' ? '#f87171' : 'var(--text-muted)',
-            transition: 'all 0.15s',
-          }}>{l}</button>
-        ))}
-      </div>
+      <Tabs label="Section" block={isMobile} value={tab} onChange={setTab} options={[
+        { value: 'today',  label: 'Today', icon: isMobile ? undefined : Calendar, count: (!isMobile && allDue) || undefined },
+        { value: 'decks',  label: 'Decks', icon: isMobile ? undefined : Layers, count: (!isMobile && decks.length) || undefined },
+        { value: 'stats',  label: 'Stats', icon: isMobile ? undefined : BarChart2 },
+        { value: 'import', label: isMobile ? 'Import' : 'Import .apkg', icon: isMobile ? undefined : Upload },
+      ]} />
 
       {/* Today */}
       {tab === 'today' && (
@@ -1646,9 +1631,9 @@ export default function LanguagePlanner() {
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: 4 }}>{deck.name}</div>
                       <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        {learning.length > 0 && <span style={{ fontSize: '0.7rem', color: '#f87171', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
-                        {reviews.length  > 0 && <span style={{ fontSize: '0.7rem', color: '#4ade80', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
-                        {newCards.length > 0 && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
+                        {learning.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{learning.length} learning</span>}
+                        {reviews.length  > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{reviews.length} review</span>}
+                        {newCards.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--info)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{newCards.length} new</span>}
                       </div>
                     </div>
                   </div>
@@ -1697,10 +1682,6 @@ export default function LanguagePlanner() {
           onSaveCards={setCards} onDeleteDeck={deleteDeck} onUpdateDeck={updateDeck} />
       )}
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pop  { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-      `}</style>
     </div>
   )
 }
