@@ -253,7 +253,7 @@ function HeadlinesPanel() {
 
       {/* Progress bar */}
       <div style={{ height: 2, background: 'var(--border)' }}>
-        <div style={{ height: '100%', width: `${progress * 100}%`, background: `linear-gradient(90deg, ${accent.color}, var(--accent-pink))`, transition: 'width 0.05s linear' }} />
+        <div style={{ height: '100%', width: `${progress * 100}%`, background: accent.color, transition: 'width 0.05s linear' }} />
       </div>
 
       {/* Image area */}

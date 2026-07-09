@@ -300,7 +300,7 @@ function CountryStats({ countryCode }) {
   }
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 5%, var(--bg-card)) 0%, var(--bg-card) 60%)', border: '1px solid var(--border-accent)' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--tool-news) 6%, var(--bg-card)) 0%, var(--bg-card) 60%)', border: '1px solid var(--border-accent)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ fontSize: '2rem', lineHeight: 1 }}>{info.flag ?? COUNTRY_FEEDS[countryCode]?.flag}</span>
@@ -845,9 +845,7 @@ export default function NewsTracker() {
       {!isMobile && (
         <div className="news-heading">
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', letterSpacing: '-0.03em' }}>
-              <span className="gradient-text">News Tracker</span>
-            </h1>
+            <h1 style={{ fontSize: '2rem', fontWeight: 750, lineHeight: 1, marginBottom: '0.35rem', letterSpacing: '-0.04em' }}>News</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               Live RSS feeds — global headlines and local news, no API key needed.
             </p>

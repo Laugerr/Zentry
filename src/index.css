@@ -205,11 +205,6 @@
     border-color: var(--border-accent);
   }
 
-  /* Page titles — formerly a purple→pink gradient, now solid ink */
-  .gradient-text {
-    color: var(--text-primary);
-  }
-
   /* Legacy buttons (pages not yet on <Button>) — pill, ink primary */
   .btn-primary {
     background: var(--ink);
@@ -301,7 +296,7 @@
     align-items: center;
     gap: 0.3rem;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
     padding: 0.2rem 0.6rem;
     border-radius: 999px;
@@ -691,7 +686,7 @@
   .segmented-block { display: flex; width: 100%; }
   .segmented-block .segmented-option { flex: 1; }
   .segmented-count {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     opacity: 0.7;
   }
   @media (pointer: coarse) {
@@ -1029,7 +1024,7 @@
     border: none;
     color: var(--text-muted);
     font-family: var(--font-sans);
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
