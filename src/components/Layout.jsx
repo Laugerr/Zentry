@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Home as HomeIcon, BookOpen, Newspaper, Radio, Trophy, Search, Command, Sun, Moon, WifiOff, LayoutGrid, ChevronRight, Settings as SettingsIcon } from 'lucide-react'
+import { Home as HomeIcon, BookOpen, Newspaper, Radio, Trophy, Search, Command, Sun, Moon, WifiOff, LayoutGrid, ChevronRight, Settings as SettingsIcon, CloudSun } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import CommandPalette from './CommandPalette'
 import { Logo } from './Logo'
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/football', icon: Trophy,    tone: 'football', label: 'Football Today',   short: 'Football', description: "Today's scores & fixtures" },
   { path: '/radio',    icon: Radio,     tone: 'radio',    label: 'Live Radio',       short: 'Radio',    description: 'World map of live radio stations' },
   { path: '/language', icon: BookOpen,  tone: 'language', label: 'Language Planner', short: 'Language', description: 'Weekly language learning tracker' },
+  { path: '/weather',  icon: CloudSun,  tone: 'weather',  label: 'Weather',          short: 'Weather',  description: 'Hourly & 7-day forecast, rain alerts' },
 ]
 
 // Phone bottom bar: always these 4 tools + "More", so the bar never changes

@@ -681,7 +681,9 @@ export default function Home() {
           <h1 className="home-hello">{greet(h)}</h1>
           <p className="home-summary">{summary}</p>
         </div>
-        <HeroWeather />
+        <Link to="/weather" viewTransition className="home-weather-link" aria-label="Open the full weather forecast">
+          <HeroWeather />
+        </Link>
       </Card>
 
       {/* Widgets — order and visibility come from Settings → Home */}

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Search, Home as HomeIcon, Newspaper, BookOpen, Radio, Trophy, Settings as SettingsIcon,
+  Search, Home as HomeIcon, Newspaper, BookOpen, Radio, Trophy, Settings as SettingsIcon, CloudSun,
   ArrowRight, CornerDownLeft, ArrowUp, ArrowDown, Command,
 } from 'lucide-react'
 
 // Static command catalogue — tools + deep-links into specific tool sections.
 // Adding a new tool? Drop it here. Each row's icon chip takes the tool colour
 // of the page it opens (TONE_BY_PATH), same as the sidebar.
-const TONE_BY_PATH = { '/home': 'ink', '/news': 'news', '/football': 'football', '/radio': 'radio', '/language': 'language' }
+const TONE_BY_PATH = { '/home': 'ink', '/news': 'news', '/football': 'football', '/radio': 'radio', '/language': 'language', '/weather': 'weather' }
 
 const COMMANDS = [
   // Tools
@@ -17,6 +17,7 @@ const COMMANDS = [
   { id: 'tool-language', group: 'Tools', icon: BookOpen,  label: 'Language Planner', hint: 'Weekly learning tracker',         path: '/language', keywords: 'learn study vocabulary' },
   { id: 'tool-radio',    group: 'Tools', icon: Radio,     label: 'Live Radio',       hint: 'World radio map',                 path: '/radio',    keywords: 'stream music station listen' },
   { id: 'tool-football', group: 'Tools', icon: Trophy,    label: 'Football Today',   hint: 'Scores & fixtures',               path: '/football', keywords: 'soccer matches premier league scores' },
+  { id: 'tool-weather',  group: 'Tools', icon: CloudSun,  label: 'Weather',          hint: 'Hourly & 7-day forecast',         path: '/weather',  keywords: 'forecast rain temperature sun wind' },
   { id: 'tool-settings', group: 'Tools', icon: SettingsIcon, label: 'Settings',        hint: 'Units, city, backup & reset',     path: '/settings', keywords: 'preferences theme celsius fahrenheit clock city export import reset backup' },
 
   // Quick actions — open a tool with a specific intent (fragment hints post-navigate)

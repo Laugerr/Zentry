@@ -14,6 +14,7 @@ const LanguagePlanner= lazy(() => import('./pages/LanguagePlanner'))
 const LiveRadio      = lazy(() => import('./pages/LiveRadio'))
 const FootballToday  = lazy(() => import('./pages/FootballToday'))
 const Settings       = lazy(() => import('./pages/Settings'))
+const Weather        = lazy(() => import('./pages/Weather'))
 
 function PageFallback() {
   return (
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
       { path: 'language', element: <Page><LanguagePlanner /></Page> },
       { path: 'radio',    element: <Page><LiveRadio /></Page> },
       { path: 'football', element: <Page><FootballToday /></Page> },
+      { path: 'weather',  element: <Page><Weather /></Page> },
       { path: 'settings', element: <Page><Settings /></Page> },
       { path: '*',        element: <Navigate to="/home" replace /> },
     ],

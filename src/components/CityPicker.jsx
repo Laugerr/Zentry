@@ -3,9 +3,10 @@ import { MapPin, Search, X, Navigation } from 'lucide-react'
 import { Button, IconButton } from './ui'
 
 // ─── City picker (Open-Meteo geocoding — free, no key) ──────────────────────
-// Shared by Settings and first-run setup. `detected` (optional) is the
-// IP-based city, shown while no city has been chosen.
-export function CityPicker({ city, onChange, detected }) {
+// Shared by Settings, first-run setup and Weather. `detected` (optional) is
+// the IP-based city, shown while no city has been chosen. `searchOnly` hides
+// the current-city row (used for "Add a city").
+export function CityPicker({ city, onChange, detected, searchOnly = false }) {
   const [query, setQuery]     = useState('')
   const [results, setResults] = useState([])
   const [state, setState]     = useState('idle') // idle | loading | error
@@ -33,7 +34,7 @@ export function CityPicker({ city, onChange, detected }) {
 
   return (
     <div className="city-picker">
-      <div className="city-current">
+      {!searchOnly && <div className="city-current">
         <span className="nav-chip nav-chip-neutral" style={{ width: 36, height: 36 }} aria-hidden="true">
           {city ? <MapPin size={17} /> : <Navigation size={17} />}
         </span>
@@ -42,7 +43,7 @@ export function CityPicker({ city, onChange, detected }) {
           <div className="settings-row-hint">{city ? [city.admin, city.country].filter(Boolean).join(', ') : 'Detected from your connection — can be off on VPN or mobile data'}</div>
         </div>
         {city && <Button size="sm" variant="secondary" onClick={() => onChange(null)}>Use automatic</Button>}
-      </div>
+      </div>}
 
       <div className="news-search city-search">
         <Search size={14} className="news-search-icon" aria-hidden="true" />

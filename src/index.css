@@ -34,6 +34,7 @@
     --tool-football: #3FD683;
     --tool-radio: #FF8656;
     --tool-language: #A28FFF;
+    --tool-weather: #38BDF8;
     --live: #FF5A5F;
 
     /* Semantic colours (map onto the tool palette where it fits) */
@@ -98,6 +99,7 @@
     --tool-football: #0E9F4F;
     --tool-radio: #F2622A;
     --tool-language: #7457F5;
+    --tool-weather: #0A8FD1;
     --live: #E5383B;
     --warning: #B26B00;
     --pink: #D63384;
@@ -888,6 +890,7 @@
   .nav-chip-football { background: var(--tool-football); }
   .nav-chip-radio    { background: var(--tool-radio); }
   .nav-chip-language { background: var(--tool-language); }
+  .nav-chip-weather  { background: var(--tool-weather); }
   .nav-chip-neutral  { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); }
   [data-theme="dark"] .nav-chip:not(.nav-chip-ink):not(.nav-chip-neutral) { color: #131210; }
   .nav-item:hover .nav-chip { transform: scale(1.06); }
@@ -1501,6 +1504,10 @@
     flex-wrap: wrap;
     background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
   }
+
+  /* Hero weather opens the Weather tool */
+  .home-weather-link { position: relative; z-index: 1; display: block; color: inherit; text-decoration: none; border-radius: var(--radius-lg); padding: 0.4rem; margin: -0.4rem; transition: background 0.15s ease; }
+  .home-weather-link:hover { background: color-mix(in srgb, var(--tool-weather) 10%, transparent); }
 
   /* "Open →" links in panel headers — padded so they're a real tap target */
   .home-more-link {
